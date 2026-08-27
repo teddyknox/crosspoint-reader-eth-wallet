@@ -48,6 +48,7 @@ class EvmWalletActivity final : public Activity {
   evm_wallet::ParsedPersonalMessage personalMessage{};
   evm_wallet::ParsedSiwe siwe{};
   bool personalMessageIsSiwe = false;
+  bool personalMessageIsEthSign = false;
   uint8_t reviewPage = 0;
   uint8_t reviewPageCount = 1;
   uint8_t pin[EvmKeyVault::PIN_LENGTH]{};

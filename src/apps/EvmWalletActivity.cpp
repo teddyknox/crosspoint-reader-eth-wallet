@@ -208,6 +208,8 @@ bool EvmWalletActivity::preventAutoSleep() { return EVM_WALLET_BLE.isActive() ||
 void EvmWalletActivity::handleRequest() {
   bool valid = false;
   const auto kind = static_cast<evm_wallet::SignRequestKind>(request.kind);
+  personalMessageIsSiwe = false;
+  personalMessageIsEthSign = false;
   if (kind == evm_wallet::SignRequestKind::Eip1559Transaction) {
     valid =
         evm_wallet::parseEip1559(request.payload, request.payloadLength, transaction) == evm_wallet::ParseError::None;
@@ -216,13 +218,17 @@ void EvmWalletActivity::handleRequest() {
     valid =
         evm_wallet::parseEip712(request.payload, request.payloadLength, typedData) == evm_wallet::SignableError::None;
     reviewPageCount = static_cast<uint8_t>(typedData.messageFieldCount + 1);
-  } else if (kind == evm_wallet::SignRequestKind::PersonalMessage) {
+  } else if (kind == evm_wallet::SignRequestKind::PersonalMessage ||
+             kind == evm_wallet::SignRequestKind::EthSignMessage) {
+    personalMessageIsEthSign = kind == evm_wallet::SignRequestKind::EthSignMessage;
     const auto personalError =
         evm_wallet::parsePersonalMessage(request.payload, request.payloadLength, personalMessage);
-    const auto siweError = evm_wallet::parseSiwe(request.payload, request.payloadLength, walletAddress, siwe);
-    personalMessageIsSiwe = siweError == evm_wallet::SignableError::None;
-    valid =
-        personalError == evm_wallet::SignableError::None && (personalMessageIsSiwe || !personalMessage.looksLikeSiwe);
+    if (!personalMessageIsEthSign) {
+      const auto siweError = evm_wallet::parseSiwe(request.payload, request.payloadLength, walletAddress, siwe);
+      personalMessageIsSiwe = siweError == evm_wallet::SignableError::None;
+    }
+    valid = personalError == evm_wallet::SignableError::None &&
+            (personalMessageIsEthSign || personalMessageIsSiwe || !personalMessage.looksLikeSiwe);
     reviewPageCount =
         personalMessageIsSiwe ? 2 : static_cast<uint8_t>(personalMessagePageCount(personalMessage.message) + 1);
   }
@@ -257,7 +263,8 @@ const uint8_t* EvmWalletActivity::requestDigest() const {
   const auto kind = static_cast<evm_wallet::SignRequestKind>(request.kind);
   if (kind == evm_wallet::SignRequestKind::Eip1559Transaction) return transaction.digest;
   if (kind == evm_wallet::SignRequestKind::Eip712TypedData) return typedData.digest;
-  if (kind == evm_wallet::SignRequestKind::PersonalMessage) return personalMessage.digest;
+  if (kind == evm_wallet::SignRequestKind::PersonalMessage || kind == evm_wallet::SignRequestKind::EthSignMessage)
+    return personalMessage.digest;
   return nullptr;
 }
 
@@ -491,26 +498,35 @@ void EvmWalletActivity::loop() {
 
 void EvmWalletActivity::renderTransactionReview(const int y) {
   const auto& metrics = UITheme::getInstance().getMetrics();
+  int contentY = y;
+  const uint8_t batchCount = evm_wallet::batchCount(request);
+  if (batchCount > 0) {
+    char batchLabel[40];
+    snprintf(batchLabel, sizeof(batchLabel), tr(STR_EVM_BATCH_CALL),
+             static_cast<unsigned>(evm_wallet::batchPosition(request)), static_cast<unsigned>(batchCount));
+    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, contentY, batchLabel, true, EpdFontFamily::BOLD);
+    contentY += 30;
+  }
   if (reviewPage == 1 && transaction.hasAccessList) {
     char value[48];
-    renderer.drawText(UI_12_FONT_ID, metrics.contentSidePadding, y, tr(STR_EVM_ACCESS_LIST), true,
+    renderer.drawText(UI_12_FONT_ID, metrics.contentSidePadding, contentY, tr(STR_EVM_ACCESS_LIST), true,
                       EpdFontFamily::BOLD);
     snprintf(value, sizeof(value), "%u", static_cast<unsigned>(transaction.accessListAddressCount));
-    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, y + 48, tr(STR_EVM_ADDRESSES), true,
+    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, contentY + 48, tr(STR_EVM_ADDRESSES), true,
                       EpdFontFamily::BOLD);
-    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding + 120, y + 48, value, true);
+    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding + 120, contentY + 48, value, true);
     snprintf(value, sizeof(value), "%u", static_cast<unsigned>(transaction.accessListStorageKeyCount));
-    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, y + 88, tr(STR_EVM_STORAGE_KEYS), true,
+    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, contentY + 88, tr(STR_EVM_STORAGE_KEYS), true,
                       EpdFontFamily::BOLD);
-    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding + 120, y + 88, value, true);
+    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding + 120, contentY + 88, value, true);
     snprintf(value, sizeof(value), "0x%02x%02x%02x%02x...%02x%02x%02x%02x", transaction.accessListHash[0],
              transaction.accessListHash[1], transaction.accessListHash[2], transaction.accessListHash[3],
              transaction.accessListHash[28], transaction.accessListHash[29], transaction.accessListHash[30],
              transaction.accessListHash[31]);
-    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, y + 128, tr(STR_EVM_LIST_HASH), true,
+    renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, contentY + 128, tr(STR_EVM_LIST_HASH), true,
                       EpdFontFamily::BOLD);
-    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, y + 164, value, true);
-    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, y + 204, "2 / 2", true);
+    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, contentY + 164, value, true);
+    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, contentY + 204, "2 / 2", true);
     return;
   }
 
@@ -529,14 +545,14 @@ void EvmWalletActivity::renderTransactionReview(const int y) {
                        : transaction.kind == evm_wallet::TransactionKind::Erc20Transfer ? tr(STR_EVM_SEND_TOKEN)
                        : transaction.kind == evm_wallet::TransactionKind::Erc20Approval ? tr(STR_EVM_APPROVE_TOKEN)
                                                                                         : tr(STR_EVM_CONTRACT_CALL);
-  renderer.drawText(UI_12_FONT_ID, metrics.contentSidePadding, y, action, true, EpdFontFamily::BOLD);
-  renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, y + 38, chain, true);
-  renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, y + 70,
+  renderer.drawText(UI_12_FONT_ID, metrics.contentSidePadding, contentY, action, true, EpdFontFamily::BOLD);
+  renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, contentY + 38, chain, true);
+  renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, contentY + 70,
                     contractCall ? tr(STR_EVM_CONTRACT) : tr(STR_EVM_TO), true, EpdFontFamily::BOLD);
-  renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding + 90, y + 70, recipient, true);
-  renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, y + 102,
+  renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding + 90, contentY + 70, recipient, true);
+  renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding, contentY + 102,
                     contractCall ? tr(STR_EVM_ETH_VALUE) : tr(STR_EVM_AMOUNT), true, EpdFontFamily::BOLD);
-  renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding + 90, y + 102, amount, true);
+  renderer.drawText(UI_10_FONT_ID, metrics.contentSidePadding + 90, contentY + 102, amount, true);
   if (contractCall) {
     char selector[11];
     if (transaction.hasSelector) {
@@ -551,22 +567,22 @@ void EvmWalletActivity::renderTransactionReview(const int y) {
              transaction.calldataHash[1], transaction.calldataHash[2], transaction.calldataHash[3],
              transaction.calldataHash[28], transaction.calldataHash[29], transaction.calldataHash[30],
              transaction.calldataHash[31]);
-    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, y + 142, tr(STR_EVM_SELECTOR), true,
+    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, contentY + 142, tr(STR_EVM_SELECTOR), true,
                       EpdFontFamily::BOLD);
-    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding + 90, y + 142, selector, true);
-    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, y + 172, tr(STR_EVM_CALLDATA), true,
+    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding + 90, contentY + 142, selector, true);
+    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, contentY + 172, tr(STR_EVM_CALLDATA), true,
                       EpdFontFamily::BOLD);
-    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding + 90, y + 172, calldata, true);
+    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding + 90, contentY + 172, calldata, true);
   } else if (transaction.kind != evm_wallet::TransactionKind::NativeTransfer) {
     char contract[14];
     evm_wallet::formatShortAddress(transaction.contract, contract);
-    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, y + 142, tr(STR_EVM_CONTRACT), true,
+    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, contentY + 142, tr(STR_EVM_CONTRACT), true,
                       EpdFontFamily::BOLD);
-    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding + 90, y + 142, contract, true);
-    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, y + 168, tr(STR_EVM_RAW_UNITS), true);
+    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding + 90, contentY + 142, contract, true);
+    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, contentY + 168, tr(STR_EVM_RAW_UNITS), true);
   }
   if (transaction.hasAccessList) {
-    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, y + 204, "1 / 2", true);
+    renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, contentY + 204, "1 / 2", true);
   }
 }
 
@@ -636,7 +652,9 @@ void EvmWalletActivity::renderPersonalMessageReview(const int y) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   char value[128]{};
   char pageLabel[32];
-  renderer.drawText(UI_12_FONT_ID, metrics.contentSidePadding, y, tr(STR_EVM_SIGN_MESSAGE), true, EpdFontFamily::BOLD);
+  renderer.drawText(UI_12_FONT_ID, metrics.contentSidePadding, y,
+                    personalMessageIsEthSign ? tr(STR_EVM_SIGN_LEGACY) : tr(STR_EVM_SIGN_MESSAGE), true,
+                    EpdFontFamily::BOLD);
   if (reviewPage == 0) {
     evm_wallet::copySpan(personalMessage.origin, value, sizeof(value));
     renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, y + 42, tr(STR_EVM_DAPP), true, EpdFontFamily::BOLD);
@@ -665,12 +683,12 @@ void EvmWalletActivity::renderPersonalMessageReview(const int y) {
 
 void EvmWalletActivity::renderPinEntry(const int y) {
   const int width = renderer.getScreenWidth();
-  const char* title = screen == Screen::SetPin                ? tr(STR_EVM_SET_PIN)
-                      : screen == Screen::ConfirmPin          ? tr(STR_EVM_CONFIRM_PIN)
-                      : screen == Screen::ChangeCurrentPin    ? tr(STR_EVM_CURRENT_PIN)
-                      : screen == Screen::ChangeNewPin        ? tr(STR_EVM_NEW_PIN)
-                      : screen == Screen::ChangeConfirmPin    ? tr(STR_EVM_CONFIRM_NEW_PIN)
-                                                              : tr(STR_EVM_ENTER_PIN);
+  const char* title = screen == Screen::SetPin             ? tr(STR_EVM_SET_PIN)
+                      : screen == Screen::ConfirmPin       ? tr(STR_EVM_CONFIRM_PIN)
+                      : screen == Screen::ChangeCurrentPin ? tr(STR_EVM_CURRENT_PIN)
+                      : screen == Screen::ChangeNewPin     ? tr(STR_EVM_NEW_PIN)
+                      : screen == Screen::ChangeConfirmPin ? tr(STR_EVM_CONFIRM_NEW_PIN)
+                                                           : tr(STR_EVM_ENTER_PIN);
   renderer.drawCenteredText(UI_12_FONT_ID, y + 12, title, true, EpdFontFamily::BOLD);
   renderer.drawCenteredText(SMALL_FONT_ID, y + 50, tr(STR_EVM_PIN_HELP), true);
 
@@ -696,8 +714,7 @@ void EvmWalletActivity::renderPinEntry(const int y) {
                               screen == Screen::UnlockPin || screen == Screen::ChangeCurrentPin
                                   ? tr(STR_EVM_WRONG_PIN)
                                   : tr(STR_EVM_PIN_MISMATCH),
-                              true,
-                              EpdFontFamily::BOLD);
+                              true, EpdFontFamily::BOLD);
   }
 
   const char* action = pinIndex + 1 < EvmKeyVault::PIN_LENGTH ? tr(STR_EVM_NEXT)

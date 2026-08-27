@@ -83,7 +83,12 @@ The device does not simulate execution or resolve token metadata. Raw token amou
 | `eth_sendTransaction` | Supported | Companion broadcasts the signed raw transaction |
 | `eth_signTypedData_v4` | Limited | Flat scalar primary types only; every field is reviewed |
 | `personal_sign` | Supported | Printable/escaped message pages are reviewed on the X3 |
+| `eth_sign` | Supported | Uses Ethereum's prefixed-message digest and an explicit legacy warning on the X3 |
 | Sign-In with Ethereum | Supported | Strict parsing, wallet-address match, nonce validation, and dapp-origin match |
+| `wallet_sendCalls` 2.0.0 | Limited | Up to eight ordered calls become non-atomic type-2 EOA transactions |
+| `wallet_getCallsStatus` | Supported | Returns pending, confirmed, failed, or partially failed status and receipts |
+| `wallet_showCallsStatus` | Supported | Surfaces the known batch status in the companion |
+| `wallet_getCapabilities` | Supported | Reports atomic execution as unsupported |
 
 The companion accepts `eip155` namespaces, so the same signer can be used across Ethereum and EVM-compatible L2/L3 networks. A network must be reachable through either Reown's RPC service or the configured custom HTTPS RPC endpoint.
 
@@ -95,10 +100,9 @@ The companion accepts `eip155` namespaces, so the same signer can be used across
 - EIP-7702/type-4 authorization transactions.
 - Contract deployment with an empty `to` field.
 - Nested arrays, structs, and other dynamic EIP-712 data.
-- `eth_sign`.
 - ERC-4337 user operations and bundler-specific methods.
 - Safe/multisig-specific workflows.
-- Batch protocols such as `wallet_sendCalls`.
+- Atomic wallet-call batches and required EIP-5792 capabilities.
 - Non-EVM chains.
 
 Some higher-level actions such as swaps, bridges, staking, multicalls, and NFT transfers can pass through as arbitrary calldata in an ordinary type-2 transaction. This is transport compatibility, not first-class decoding: the X3 cannot explain the resulting state changes.
@@ -119,10 +123,17 @@ The companion uses Reown WalletKit and advertises only:
 - `eth_sendTransaction`
 - `eth_signTypedData_v4`
 - `personal_sign`
+- `eth_sign`
+- `wallet_sendCalls`
+- `wallet_getCallsStatus`
+- `wallet_showCallsStatus`
+- `wallet_getCapabilities`
 
 A session proposal requesting unsupported required methods, events, namespaces, or no EVM chain is rejected. Pairing is available through the camera scanner, a pasted `wc:` URI, or a compatible deep link.
 
 Keep **Ethereum Wallet** open and unlocked on the X3 while connecting or signing. Closing the wallet stops the wallet BLE service and wipes the decrypted key.
+
+For `wallet_sendCalls`, the companion prepares sequential pending nonces and the X3 shows the call's position in the batch. All calls must be individually approved before the first signed transaction is submitted. The companion retains call-status records for 24 hours while the app process remains alive; this hackathon build does not yet persist those records across app termination.
 
 ## Recovery and reset
 
@@ -135,6 +146,6 @@ There is currently no supported way to display, export, import, or recover the p
 
 ## Verification
 
-The repository includes native vectors for transaction parsing, access lists, Keccak-256, EIP-712, SIWE, and the BLE wire protocol, plus iOS tests for canonical transaction encoding, RPC preparation, WalletConnect parsing, and QR generation.
+The repository includes native vectors for transaction parsing, access lists, Keccak-256, EIP-712, SIWE, message-signing kinds, batch review metadata, and the BLE wire protocol, plus iOS tests for canonical transaction encoding, RPC preparation, WalletConnect parsing, wallet-call batches, and QR generation.
 
 After changing the wallet, verify the host tests, iOS tests, firmware build, a real X3 boot with heap logging, and a complete testnet signing flow. A successful compile alone does not validate the BLE or e-ink interaction.

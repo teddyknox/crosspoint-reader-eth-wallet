@@ -16,7 +16,7 @@ The private key is generated, encrypted, stored, and used on the X3. The iOS com
 - Encrypts the private key in ESP32 NVS with AES-256-GCM and a PIN-derived PBKDF2-HMAC-SHA256 key.
 - Keeps signing and address derivation on the X3; decrypted key material is wiped when the wallet closes.
 - Displays the wallet address and an Ethereum receive QR code on both the X3 and iPhone.
-- Reviews and signs EIP-1559 transactions, EIP-712 messages, Sign-In with Ethereum requests, and personal messages.
+- Reviews and signs EIP-1559 transactions, EIP-712 messages, Sign-In with Ethereum requests, personal messages, and explicitly labelled legacy `eth_sign` requests.
 - Uses OS-level BLE bonding so the first paired phone is the only trusted companion until **Settings > System > Forget paired phone** is selected.
 
 ### iOS companion and WalletConnect
@@ -56,8 +56,9 @@ The iPhone is a network bridge and user interface, not the signer. Every support
 - Arbitrary type-2 smart-contract calldata, including swaps, bridges, staking, multicalls, and NFT transfers when expressed as ordinary contract calls.
 - Non-empty EIP-1559 access lists. The X3 validates the RLP structure and shows address count, storage-key count, and a list fingerprint on a second review page.
 - `eth_signTransaction` and `eth_sendTransaction`.
+- `wallet_sendCalls` 2.0.0 as ordered, non-atomic batches of up to eight type-2 transactions. Every call is approved before the companion broadcasts any of them.
 - Flat scalar EIP-712 data through `eth_signTypedData_v4`.
-- Strict Sign-In with Ethereum messages and reviewed `personal_sign` messages.
+- Strict Sign-In with Ethereum messages and reviewed `personal_sign` and `eth_sign` messages.
 - EVM L1s, L2s, and L3s identified by an `eip155` chain ID, subject to RPC availability.
 
 Not currently supported:
@@ -66,7 +67,7 @@ Not currently supported:
 - EIP-4844/type-3 blob transactions or EIP-7702/type-4 authorizations.
 - Contract deployment because an explicit `to` address is required.
 - Nested or dynamic EIP-712 structures.
-- `eth_sign`, ERC-4337 user operations, Safe-specific flows, or `wallet_sendCalls` batches.
+- Atomic wallet-call batches, ERC-4337 user operations, or Safe-specific flows.
 - Non-EVM chains.
 
 Unknown calldata is intentionally allowed for this hackathon build. The X3 shows the target, ETH value, selector, calldata length, and calldata hash, but it does not decode arbitrary contract behavior. See [Ethereum wallet architecture and security](./docs/ethereum-wallet.md) for the complete flow and limitations.

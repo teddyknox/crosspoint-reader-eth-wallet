@@ -29,6 +29,12 @@ struct ReownRPCClient: EvmRPCRequesting {
     }
 
     func call(chainID: String, method: String, params: [Any]) async throws -> String {
+        let result = try await callJSON(chainID: chainID, method: method, params: params)
+        guard let result = result as? String else { throw ReownRPCError.invalidResponse }
+        return result
+    }
+
+    func callJSON(chainID: String, method: String, params: [Any]) async throws -> Any {
         let url = try endpointURL(chainID: chainID)
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -44,7 +50,7 @@ struct ReownRPCClient: EvmRPCRequesting {
         if let error = json["error"] as? [String: Any] {
             throw ReownRPCError.remote(error["message"] as? String ?? "Chain RPC request failed")
         }
-        guard let result = json["result"] as? String else { throw ReownRPCError.invalidResponse }
+        guard let result = json["result"] else { throw ReownRPCError.invalidResponse }
         return result
     }
 

@@ -78,6 +78,46 @@ TEST(EvmWalletProtocol, ValidatesFixedRequestAndCrc) {
   EXPECT_FALSE(evm_wallet::validateRequest(request));
 }
 
+TEST(EvmWalletProtocol, AcceptsEthSignAndValidBatchMetadata) {
+  evm_wallet::SignRequest request{};
+  std::memcpy(request.magic, evm_wallet::REQUEST_MAGIC, 4);
+  request.version = evm_wallet::PROTOCOL_VERSION;
+  request.wireSize = sizeof(request);
+  request.kind = static_cast<uint8_t>(evm_wallet::SignRequestKind::EthSignMessage);
+  request.requestId = 8;
+  request.payloadLength = 1;
+  request.payload[0] = 0x01;
+  request.crc32 = evm_wallet::requestCrc32(request);
+  EXPECT_TRUE(evm_wallet::validateRequest(request));
+
+  request.kind = static_cast<uint8_t>(evm_wallet::SignRequestKind::Eip1559Transaction);
+  request.reserved = 0x0201;
+  request.crc32 = evm_wallet::requestCrc32(request);
+  EXPECT_TRUE(evm_wallet::validateRequest(request));
+  EXPECT_EQ(evm_wallet::batchPosition(request), 1U);
+  EXPECT_EQ(evm_wallet::batchCount(request), 2U);
+}
+
+TEST(EvmWalletProtocol, RejectsInvalidBatchMetadata) {
+  evm_wallet::SignRequest request{};
+  std::memcpy(request.magic, evm_wallet::REQUEST_MAGIC, 4);
+  request.version = evm_wallet::PROTOCOL_VERSION;
+  request.wireSize = sizeof(request);
+  request.requestId = 9;
+  request.payloadLength = 1;
+  request.payload[0] = 0x01;
+
+  request.kind = static_cast<uint8_t>(evm_wallet::SignRequestKind::Eip1559Transaction);
+  request.reserved = 0x0102;
+  request.crc32 = evm_wallet::requestCrc32(request);
+  EXPECT_FALSE(evm_wallet::validateRequest(request));
+
+  request.kind = static_cast<uint8_t>(evm_wallet::SignRequestKind::PersonalMessage);
+  request.reserved = 0x0201;
+  request.crc32 = evm_wallet::requestCrc32(request);
+  EXPECT_FALSE(evm_wallet::validateRequest(request));
+}
+
 TEST(EvmTransaction, ParsesCanonicalNativeEip1559) {
   // 0.01 ETH to 0x1111... on chain 10, with an empty access list.
   const auto tx =

@@ -76,10 +76,15 @@ The companion advertises these methods:
 - `eth_sendTransaction`
 - `eth_signTypedData_v4`
 - `personal_sign`
+- `eth_sign`
+- `wallet_sendCalls`
+- `wallet_getCallsStatus`
+- `wallet_showCallsStatus`
+- `wallet_getCapabilities`
 
-It supports EIP-1559 native transfers, recognized ERC-20 transfers and approvals, arbitrary contract calldata, and type-2 access lists. Flat scalar EIP-712 messages, strict Sign-In with Ethereum messages, and paginated personal messages can also be reviewed and signed.
+It supports EIP-1559 native transfers, recognized ERC-20 transfers and approvals, arbitrary contract calldata, and type-2 access lists. Flat scalar EIP-712 messages, strict Sign-In with Ethereum messages, paginated personal messages, and explicitly labelled legacy `eth_sign` messages can also be reviewed and signed. EIP-5792 call batches are limited to eight ordered, non-atomic type-2 transactions; all signatures are collected before the first broadcast.
 
-Legacy/type-0, EIP-2930/type-1, blob/type-3, EIP-7702/type-4, contract deployment, nested typed data, account-abstraction user operations, Safe-specific flows, `wallet_sendCalls`, `eth_sign`, and non-EVM namespaces remain unsupported.
+Legacy/type-0, EIP-2930/type-1, blob/type-3, EIP-7702/type-4, contract deployment, nested typed data, account-abstraction user operations, Safe-specific flows, atomic call batches, and non-EVM namespaces remain unsupported.
 
 See [Ethereum Wallet Architecture and Security](../docs/ethereum-wallet.md) for the complete trust model, review behavior, and limitations.
 
@@ -95,4 +100,4 @@ xcodebuild test \
   CODE_SIGNING_ALLOWED=NO
 ```
 
-The suite covers the calendar wire format and CRC, Ethereum transaction encoding, pending-nonce preparation, custom RPC routing, WalletConnect QR parsing, typed and personal signing payloads, access-list encoding, signature assembly, and receive QR rendering.
+The suite covers the calendar wire format and CRC, Ethereum transaction encoding, pending-nonce preparation, custom RPC routing, WalletConnect QR parsing, typed, personal, and legacy signing payloads, wallet-call batches, access-list encoding, signature assembly, and receive QR rendering.

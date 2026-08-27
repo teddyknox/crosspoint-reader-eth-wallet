@@ -65,8 +65,13 @@ enum EvmSignRequestEncoder {
     static let wireSize = 2_068
     static let maxPayload = 2_048
 
-    static func wrap(kind: UInt8, payload: Data, requestID: UInt32) throws -> Data {
+    static func wrap(kind: UInt8, payload: Data, requestID: UInt32,
+                     batchPosition: UInt8 = 0, batchCount: UInt8 = 0) throws -> Data {
         guard !payload.isEmpty, payload.count <= maxPayload else { throw EvmSignRequestError.payloadTooLarge }
+        guard (batchPosition == 0 && batchCount == 0) ||
+              (kind == 0 && batchPosition > 0 && batchPosition <= batchCount) else {
+            throw EvmSignRequestError.invalidMessage
+        }
         var writer = EvmSignWireWriter()
         writer.appendBytes([0x58, 0x33, 0x45, 0x53]) // X3ES
         writer.appendUInt8(2)
@@ -74,7 +79,7 @@ enum EvmSignRequestEncoder {
         writer.appendUInt16(UInt16(wireSize))
         writer.appendUInt32(requestID)
         writer.appendUInt16(UInt16(payload.count))
-        writer.appendUInt16(0)
+        writer.appendUInt16(UInt16(batchPosition) | UInt16(batchCount) << 8)
         writer.data.append(payload)
         writer.appendZeroes(maxPayload - payload.count)
         writer.appendUInt32(CRC32.checksum(writer.data))
@@ -129,6 +134,23 @@ enum EvmSignRequestEncoder {
     static func personalMessage(messageValue: Any, chainID: String, address: String, origin: String,
                                 requestID: UInt32 = UInt32.random(in: 1...UInt32.max)) throws
         -> PreparedEvmSignature {
+        try messageSignature(
+            messageValue: messageValue, chainID: chainID, address: address, origin: origin,
+            kind: 2, requestID: requestID
+        )
+    }
+
+    static func ethSign(messageValue: Any, chainID: String, address: String, origin: String,
+                        requestID: UInt32 = UInt32.random(in: 1...UInt32.max)) throws
+        -> PreparedEvmSignature {
+        try messageSignature(
+            messageValue: messageValue, chainID: chainID, address: address, origin: origin,
+            kind: 3, requestID: requestID
+        )
+    }
+
+    private static func messageSignature(messageValue: Any, chainID: String, address: String, origin: String,
+                                         kind: UInt8, requestID: UInt32) throws -> PreparedEvmSignature {
         let message: Data
         if let text = messageValue as? String {
             if text.hasPrefix("0x") {
@@ -148,7 +170,7 @@ enum EvmSignRequestEncoder {
         guard message.count <= UInt16.max else { throw EvmSignRequestError.payloadTooLarge }
         payload.appendUInt16(UInt16(message.count))
         payload.data.append(message)
-        let wire = try wrap(kind: 2, payload: payload.data, requestID: requestID)
+        let wire = try wrap(kind: kind, payload: payload.data, requestID: requestID)
         return PreparedEvmSignature(requestID: requestID, request: wire)
     }
 

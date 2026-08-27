@@ -268,6 +268,92 @@ final class EvmTransactionEncoderTests: XCTestCase {
         XCTAssertEqual(prepared.request[5], 2)
         XCTAssertEqual(prepared.request.count, EvmSignRequestEncoder.wireSize)
     }
+
+    func testEthSignUsesExplicitLegacySigningRequest() throws {
+        let prepared = try EvmSignRequestEncoder.ethSign(
+            messageValue: "0x010203", chainID: "10",
+            address: "0x1111111111111111111111111111111111111111", origin: "https://example.com",
+            requestID: 12
+        )
+        XCTAssertEqual(prepared.request[5], 3)
+        XCTAssertEqual(prepared.request.count, EvmSignRequestEncoder.wireSize)
+    }
+
+    func testWalletCallBatchParsesEIP5792Request() throws {
+        let address = "0x1111111111111111111111111111111111111111"
+        let batch = try WalletCallBatchRequest.parse([[
+            "version": "2.0.0", "chainId": "0xa", "from": address,
+            "atomicRequired": false,
+            "calls": [
+                ["to": "0x2222222222222222222222222222222222222222", "value": "0x1"],
+                ["to": "0x3333333333333333333333333333333333333333", "data": "0x1234"],
+            ],
+            "capabilities": ["paymasterService": ["optional": true]],
+        ]], expectedChainID: "10", expectedAddress: address)
+
+        XCTAssertEqual(batch.version, "2.0.0")
+        XCTAssertEqual(batch.chainIDDecimal, "10")
+        XCTAssertEqual(batch.calls.count, 2)
+        XCTAssertEqual(batch.calls[0].data, "0x")
+        XCTAssertEqual(batch.calls[1].value, "0x0")
+    }
+
+    func testWalletCallBatchRejectsAtomicAndRequiredCapabilities() {
+        let address = "0x1111111111111111111111111111111111111111"
+        let call = [["to": "0x2222222222222222222222222222222222222222"]]
+        XCTAssertThrowsError(try WalletCallBatchRequest.parse([[
+            "version": "2.0.0", "chainId": "0xa", "from": address,
+            "atomicRequired": true, "calls": call,
+        ]], expectedChainID: "10", expectedAddress: address)) { error in
+            XCTAssertEqual((error as? WalletCallBatchError)?.code, 5760)
+        }
+        XCTAssertThrowsError(try WalletCallBatchRequest.parse([[
+            "version": "2.0.0", "chainId": "0xa", "from": address,
+            "atomicRequired": false, "calls": call,
+            "capabilities": ["paymasterService": ["optional": false]],
+        ]], expectedChainID: "10", expectedAddress: address)) { error in
+            XCTAssertEqual((error as? WalletCallBatchError)?.code, 5700)
+        }
+    }
+
+    func testWalletCallBatchAllowsOmittedFromAndRejectsAnotherAccount() throws {
+        let address = "0x1111111111111111111111111111111111111111"
+        let parameters: [String: Any] = [
+            "version": "2.0.0", "chainId": "0xa", "atomicRequired": false,
+            "calls": [["to": "0x2222222222222222222222222222222222222222"]],
+        ]
+        XCTAssertNoThrow(try WalletCallBatchRequest.parse(
+            [parameters], expectedChainID: "10", expectedAddress: address
+        ))
+        var mismatched = parameters
+        mismatched["from"] = "0x3333333333333333333333333333333333333333"
+        XCTAssertThrowsError(try WalletCallBatchRequest.parse(
+            [mismatched], expectedChainID: "10", expectedAddress: address
+        )) { error in
+            XCTAssertEqual((error as? WalletCallBatchError)?.code, 4100)
+        }
+    }
+
+    func testBatchPreparationAssignsConsecutiveNoncesAndReviewPositions() async throws {
+        let rpc = SequenceStubEvmRPC(responses: [
+            "eth_getTransactionCount": ["0x7"],
+            "eth_maxPriorityFeePerGas": ["0x3b9aca00"],
+            "eth_gasPrice": ["0x77359400"],
+            "eth_estimateGas": ["0x5208", "0x10000"],
+        ])
+        let prepared = try await EvmTransactionService(rpc: rpc).prepareBatch(
+            chainID: "10", sender: "0x1111111111111111111111111111111111111111",
+            calls: [
+                EvmWalletCall(recipient: "0x2222222222222222222222222222222222222222", value: "0x1", data: "0x"),
+                EvmWalletCall(recipient: "0x3333333333333333333333333333333333333333", value: "0x0", data: "0x1234"),
+            ]
+        )
+
+        XCTAssertEqual(prepared.count, 2)
+        XCTAssertEqual(Array(prepared[0].request[14...15]), [1, 2])
+        XCTAssertEqual(Array(prepared[1].request[14...15]), [2, 2])
+        XCTAssertNotEqual(prepared[0].unsignedTransaction, prepared[1].unsignedTransaction)
+    }
 }
 
 private final class StubEvmRPC: EvmRPCRequesting, @unchecked Sendable {
@@ -289,6 +375,26 @@ private final class StubEvmRPC: EvmRPCRequesting, @unchecked Sendable {
 
     func params(for method: String) -> [Any]? {
         lock.withLock { calls.first(where: { $0.0 == method })?.1 }
+    }
+}
+
+private final class SequenceStubEvmRPC: EvmRPCRequesting, @unchecked Sendable {
+    private let lock = NSLock()
+    private var responses: [String: [String]]
+
+    init(responses: [String: [String]]) {
+        self.responses = responses
+    }
+
+    func call(chainID _: String, method: String, params _: [Any]) async throws -> String {
+        try lock.withLock {
+            guard var values = responses[method], !values.isEmpty else {
+                throw ReownRPCError.invalidResponse
+            }
+            let value = values.removeFirst()
+            responses[method] = values
+            return value
+        }
     }
 }
 

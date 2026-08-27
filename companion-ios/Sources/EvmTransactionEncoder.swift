@@ -24,9 +24,14 @@ struct PreparedEvmTransaction {
     let requestID: UInt32
     let unsignedTransaction: Data
     fileprivate let unsignedFields: [Data]
+    fileprivate let batchPosition: UInt8
+    fileprivate let batchCount: UInt8
 
     var request: Data {
-        try! EvmSignRequestEncoder.wrap(kind: 0, payload: unsignedTransaction, requestID: requestID)
+        try! EvmSignRequestEncoder.wrap(
+            kind: 0, payload: unsignedTransaction, requestID: requestID,
+            batchPosition: batchPosition, batchCount: batchCount
+        )
     }
 
     func signedTransaction(signature: Data) throws -> Data {
@@ -41,7 +46,8 @@ struct PreparedEvmTransaction {
 enum EvmTransactionEncoder {
     static func prepare(chainID: String, nonce: String, recipient: String, amount: String,
                         gasLimit: String, maxPriorityFeeGwei: String, maxFeeGwei: String,
-                        dataHex: String, requestID: UInt32 = UInt32.random(in: 1...UInt32.max)) throws -> PreparedEvmTransaction {
+                        dataHex: String, requestID: UInt32 = UInt32.random(in: 1...UInt32.max),
+                        batchPosition: UInt8 = 0, batchCount: UInt8 = 0) throws -> PreparedEvmTransaction {
         guard let chain = UInt64(chainID), chain > 0 else { throw EvmTransactionError.invalidNumber("chain ID") }
         guard let nonceValue = UInt64(nonce) else { throw EvmTransactionError.invalidNumber("nonce") }
         guard let gas = UInt64(gasLimit), gas > 0 else { throw EvmTransactionError.invalidNumber("gas limit") }
@@ -57,13 +63,17 @@ enum EvmTransactionEncoder {
         let encodedFields = rawFields.map(RLP.bytes) + [RLP.encodedEmptyList]
         let unsigned = Data([2]) + RLP.listEncodedFields(encodedFields)
         guard unsigned.count <= EvmSignRequestEncoder.maxPayload else { throw EvmTransactionError.transactionTooLarge }
-        return PreparedEvmTransaction(requestID: requestID, unsignedTransaction: unsigned, unsignedFields: encodedFields)
+        return PreparedEvmTransaction(
+            requestID: requestID, unsignedTransaction: unsigned, unsignedFields: encodedFields,
+            batchPosition: batchPosition, batchCount: batchCount
+        )
     }
 
     static func prepareHex(chainID: String, nonce: String, recipient: String, value: String,
                            gasLimit: String, maxPriorityFee: String, maxFee: String,
                            dataHex: String, accessList: Any? = nil,
-                           requestID: UInt32 = UInt32.random(in: 1...UInt32.max)) throws
+                           requestID: UInt32 = UInt32.random(in: 1...UInt32.max),
+                           batchPosition: UInt8 = 0, batchCount: UInt8 = 0) throws
         -> PreparedEvmTransaction {
         guard let chain = Hex.quantityUInt64(chainID), chain > 0 else {
             throw EvmTransactionError.invalidNumber("chain ID")
@@ -83,8 +93,10 @@ enum EvmTransactionEncoder {
         let encodedFields = rawFields.map(RLP.bytes) + [encodedAccessList]
         let unsigned = Data([2]) + RLP.listEncodedFields(encodedFields)
         guard unsigned.count <= EvmSignRequestEncoder.maxPayload else { throw EvmTransactionError.transactionTooLarge }
-        return PreparedEvmTransaction(requestID: requestID, unsignedTransaction: unsigned,
-                                      unsignedFields: encodedFields)
+        return PreparedEvmTransaction(
+            requestID: requestID, unsignedTransaction: unsigned, unsignedFields: encodedFields,
+            batchPosition: batchPosition, batchCount: batchCount
+        )
     }
 
     private static func encodeAccessList(_ value: Any?) throws -> Data {
@@ -121,6 +133,15 @@ enum EvmTransactionEncoder {
             "value": Hex.quantityString(value),
             "data": dataHex,
         ]
+    }
+
+    static func rpcTransactionHex(sender: String, recipient: String, value: String,
+                                  dataHex: String) throws -> [String: String] {
+        _ = try Hex.decode(sender, exactBytes: 20, error: .invalidAddress)
+        _ = try Hex.decode(recipient, exactBytes: 20, error: .invalidAddress)
+        _ = try Hex.decode(dataHex, exactBytes: nil, error: .invalidData)
+        _ = try Hex.quantity(value, field: "value")
+        return ["from": sender, "to": recipient, "value": value, "data": dataHex]
     }
 }
 

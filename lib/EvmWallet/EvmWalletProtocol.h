@@ -20,7 +20,12 @@ enum class TransactionKind : uint8_t {
   Erc20Approval = 2,
   ContractCall = 3,
 };
-enum class SignRequestKind : uint8_t { Eip1559Transaction = 0, Eip712TypedData = 1, PersonalMessage = 2 };
+enum class SignRequestKind : uint8_t {
+  Eip1559Transaction = 0,
+  Eip712TypedData = 1,
+  PersonalMessage = 2,
+  EthSignMessage = 3,
+};
 enum class ControlOpcode : uint8_t { Begin = 1, Commit = 2, Cancel = 3 };
 enum class WalletState : uint8_t {
   Stopped = 0,
@@ -83,5 +88,7 @@ static_assert(sizeof(WalletStatus) == 129);
 uint32_t crc32(const uint8_t* data, size_t length);
 uint32_t requestCrc32(const SignRequest& request);
 bool validateRequest(const SignRequest& request);
+uint8_t batchPosition(const SignRequest& request);
+uint8_t batchCount(const SignRequest& request);
 
 }  // namespace evm_wallet
