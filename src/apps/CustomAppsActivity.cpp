@@ -10,7 +10,7 @@ namespace fui = freeink::ui;
 
 CustomAppsActivity::CustomAppsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
     : UiListActivity("CustomApps", renderer, mappedInput) {
-  static_assert(APP_COUNT == 2, "Keep APP_COUNT in sync with the static registry");
+  static_assert(APP_COUNT == 3, "Keep APP_COUNT in sync with the static registry");
   const auto* apps = custom_apps::descriptors();
   for (size_t i = 0; i < custom_apps::count(); ++i) {
     fui::ListItem item;

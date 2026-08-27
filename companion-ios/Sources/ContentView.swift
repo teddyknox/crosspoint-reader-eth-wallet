@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var model: CompanionModel
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         NavigationStack {
@@ -23,13 +24,67 @@ struct ContentView: View {
                     }
                 }
 
+                Section("Weather") {
+                    LabeledContent("Location", value: model.weatherLocationText)
+                    LabeledContent("Forecast", value: model.weatherSummaryText)
+                    LabeledContent("Status") {
+                        Text(model.weatherStatusText)
+                            .multilineTextAlignment(.trailing)
+                            .lineLimit(2)
+                    }
+                    if model.hasWeatherLocationAccess {
+                        Button {
+                            Task { await model.refreshWeather() }
+                        } label: {
+                            if model.isRefreshingWeather {
+                                HStack {
+                                    ProgressView()
+                                    Text("Refreshing Weather")
+                                }
+                            } else {
+                                Text("Refresh Weather")
+                            }
+                        }
+                        .disabled(model.isRefreshingWeather)
+                    } else {
+                        Button("Enable Current-Location Weather") {
+                            Task { await model.requestWeatherAccess() }
+                        }
+                        .disabled(model.isRefreshingWeather)
+                    }
+
+                    if let legalURL = model.weatherAttributionURL {
+                        Link(destination: legalURL) {
+                            HStack {
+                                Group {
+                                    if let weatherMarkURL {
+                                        AsyncImage(url: weatherMarkURL) { phase in
+                                            if let image = phase.image {
+                                                image.resizable().scaledToFit()
+                                            } else {
+                                                Text("Apple Weather Attribution")
+                                            }
+                                        }
+                                    } else {
+                                        Text("Apple Weather Attribution")
+                                    }
+                                }
+                                .frame(maxWidth: 180, maxHeight: 24, alignment: .leading)
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.footnote)
+                            }
+                        }
+                    }
+                }
+
                 Section("Xteink X3") {
                     LabeledContent("Bluetooth", value: model.bluetoothText)
                     LabeledContent("Sync", value: model.syncText)
                     Button("Sync Now") {
                         model.syncNow()
                     }
-                    .disabled(!model.hasCalendarAccess || !model.bluetoothReady)
+                    .disabled((!model.hasCalendarAccess && !model.hasWeatherSnapshot) || !model.bluetoothReady)
                 }
 
                 Section("Wallet") {
@@ -49,6 +104,10 @@ struct ContentView: View {
             .navigationTitle("X3 Companion")
             .task { await model.start() }
         }
+    }
+
+    private var weatherMarkURL: URL? {
+        colorScheme == .dark ? model.weatherAttributionMarkDarkURL : model.weatherAttributionMarkLightURL
     }
 }
 

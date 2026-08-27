@@ -40,6 +40,7 @@
 #include "images/LoadingIcon.h"
 #include "phone/PhoneSnapshotStore.h"
 #include "phone/PhoneSyncConfig.h"
+#include "phone/WeatherSnapshotStore.h"
 #include "util/ButtonNavigator.h"
 #include "util/ScreenshotUtil.h"
 
@@ -419,6 +420,7 @@ void setup() {
   KOREADER_STORE.loadFromFile();
   OPDS_STORE.loadFromFile();
   PHONE_SNAPSHOT_STORE.load();
+  WEATHER_SNAPSHOT_STORE.load();
   UITheme::getInstance().reload();
   ButtonNavigator::setMappedInputManager(mappedInputManager);
 

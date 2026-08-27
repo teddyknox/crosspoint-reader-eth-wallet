@@ -6,6 +6,7 @@ final class BLESyncManager: NSObject {
         var bluetoothReady = false
         var bluetoothText = "Starting"
         var syncText = "Waiting for X3"
+        var weatherText = "Weather not configured"
         var walletText = "Open Ethereum Wallet on X3"
         var walletAddress = "Not connected"
     }
@@ -14,6 +15,9 @@ final class BLESyncManager: NSObject {
     private static let calendarControlUUID = CBUUID(string: "7d2ea28b-f7bd-485a-bd9d-92ad6ecfe93e")
     private static let calendarDataUUID = CBUUID(string: "7d2ea28c-f7bd-485a-bd9d-92ad6ecfe93e")
     private static let calendarStatusUUID = CBUUID(string: "7d2ea28d-f7bd-485a-bd9d-92ad6ecfe93e")
+    private static let weatherControlUUID = CBUUID(string: "7d2ea28e-f7bd-485a-bd9d-92ad6ecfe93e")
+    private static let weatherDataUUID = CBUUID(string: "7d2ea28f-f7bd-485a-bd9d-92ad6ecfe93e")
+    private static let weatherStatusUUID = CBUUID(string: "7d2ea290-f7bd-485a-bd9d-92ad6ecfe93e")
     private static let walletServiceUUID = CBUUID(string: "38178710-0a1b-4f29-9803-7f6a6d75de10")
     private static let walletControlUUID = CBUUID(string: "38178711-0a1b-4f29-9803-7f6a6d75de10")
     private static let walletDataUUID = CBUUID(string: "38178712-0a1b-4f29-9803-7f6a6d75de10")
@@ -21,6 +25,7 @@ final class BLESyncManager: NSObject {
 
     private let stateHandler: (State) -> Void
     private let snapshotProvider: () async throws -> Data
+    private let weatherSnapshotProvider: () async throws -> Data
     private let walletResultHandler: (UInt32, Data, Data) -> Void
     private let walletFailureHandler: (String) -> Void
     private var central: CBCentralManager!
@@ -28,20 +33,27 @@ final class BLESyncManager: NSObject {
     private var calendarControl: CBCharacteristic?
     private var calendarData: CBCharacteristic?
     private var calendarStatus: CBCharacteristic?
+    private var weatherControl: CBCharacteristic?
+    private var weatherData: CBCharacteristic?
+    private var weatherStatus: CBCharacteristic?
     private var walletControl: CBCharacteristic?
     private var walletData: CBCharacteristic?
     private var walletStatus: CBCharacteristic?
     private var state = State()
     private var writeQueue: [(CBCharacteristic, Data)] = []
     private var preparingSnapshot = false
+    private var snapshotQueueIncludesCalendar = false
+    private var snapshotQueueIncludesWeather = false
     private var sendingWallet = false
     private var pendingWalletRequest: Data?
 
     init(state: @escaping (State) -> Void, snapshot: @escaping () async throws -> Data,
+         weatherSnapshot: @escaping () async throws -> Data,
          walletResult: @escaping (UInt32, Data, Data) -> Void,
          walletFailure: @escaping (String) -> Void) {
         stateHandler = state
         snapshotProvider = snapshot
+        weatherSnapshotProvider = weatherSnapshot
         walletResultHandler = walletResult
         walletFailureHandler = walletFailure
         super.init()
@@ -77,17 +89,38 @@ final class BLESyncManager: NSObject {
         guard !preparingSnapshot, !sendingWallet,
               let peripheral, let calendarControl, let calendarData else { return }
         preparingSnapshot = true
-        update(syncText: "Preparing calendar")
+        update(syncText: "Preparing calendar",
+               weatherText: weatherControl != nil && weatherData != nil ? "Preparing weather" : nil)
         Task { @MainActor [weak self] in
             guard let self else { return }
+            writeQueue.removeAll(keepingCapacity: true)
+            snapshotQueueIncludesCalendar = false
+            snapshotQueueIncludesWeather = false
             do {
                 let snapshot = try await snapshotProvider()
-                try enqueue(payload: snapshot, expectedSize: CalendarSnapshotEncoder.wireSize,
-                            peripheral: peripheral, control: calendarControl, data: calendarData, wallet: false)
+                try append(payload: snapshot, expectedSize: CalendarSnapshotEncoder.wireSize,
+                           peripheral: peripheral, control: calendarControl, data: calendarData)
+                snapshotQueueIncludesCalendar = true
             } catch {
-                preparingSnapshot = false
                 update(syncText: error.localizedDescription)
             }
+            if let weatherControl, let weatherData {
+                do {
+                    let snapshot = try await weatherSnapshotProvider()
+                    try append(payload: snapshot, expectedSize: WeatherSnapshotEncoder.wireSize,
+                               peripheral: peripheral, control: weatherControl, data: weatherData)
+                    snapshotQueueIncludesWeather = true
+                } catch {
+                    update(weatherText: error.localizedDescription)
+                }
+            }
+            guard !writeQueue.isEmpty else {
+                preparingSnapshot = false
+                return
+            }
+            update(syncText: snapshotQueueIncludesCalendar ? "Sending calendar" : nil,
+                   weatherText: snapshotQueueIncludesWeather ? "Sending weather" : nil)
+            writeNext()
         }
     }
 
@@ -106,8 +139,16 @@ final class BLESyncManager: NSObject {
 
     private func enqueue(payload: Data, expectedSize: Int, peripheral: CBPeripheral,
                          control: CBCharacteristic, data: CBCharacteristic, wallet: Bool) throws {
-        guard payload.count == expectedSize else { throw CompanionError.unavailable }
         writeQueue.removeAll(keepingCapacity: true)
+        try append(payload: payload, expectedSize: expectedSize, peripheral: peripheral, control: control, data: data)
+        sendingWallet = wallet
+        if wallet { update(walletText: "Sending signing request") } else { update(syncText: "Sending calendar") }
+        writeNext()
+    }
+
+    private func append(payload: Data, expectedSize: Int, peripheral: CBPeripheral,
+                        control: CBCharacteristic, data: CBCharacteristic) throws {
+        guard payload.count == expectedSize else { throw CompanionError.unavailable }
         var begin = Data([1])
         begin.append(UInt8(truncatingIfNeeded: payload.count))
         begin.append(UInt8(truncatingIfNeeded: payload.count >> 8))
@@ -124,9 +165,6 @@ final class BLESyncManager: NSObject {
             offset = end
         }
         writeQueue.append((control, Data([UInt8(2)])))
-        sendingWallet = wallet
-        if wallet { update(walletText: "Sending signing request") } else { update(syncText: "Sending calendar") }
-        writeNext()
     }
 
     private func writeNext() {
@@ -135,7 +173,11 @@ final class BLESyncManager: NSObject {
                 update(walletText: "Review signing request on X3")
             } else {
                 preparingSnapshot = false
-                update(syncText: "Waiting for X3 confirmation")
+                update(syncText: snapshotQueueIncludesCalendar ? "Waiting for X3 confirmation" : nil,
+                       weatherText: snapshotQueueIncludesWeather ? "Waiting for X3 confirmation" : nil)
+                snapshotQueueIncludesCalendar = false
+                snapshotQueueIncludesWeather = false
+                prepareWalletIfReady()
             }
             return
         }
@@ -144,10 +186,12 @@ final class BLESyncManager: NSObject {
     }
 
     private func update(bluetoothReady: Bool? = nil, bluetoothText: String? = nil,
-                        syncText: String? = nil, walletText: String? = nil, walletAddress: String? = nil) {
+                        syncText: String? = nil, weatherText: String? = nil,
+                        walletText: String? = nil, walletAddress: String? = nil) {
         if let bluetoothReady { state.bluetoothReady = bluetoothReady }
         if let bluetoothText { state.bluetoothText = bluetoothText }
         if let syncText { state.syncText = syncText }
+        if let weatherText { state.weatherText = weatherText }
         if let walletText { state.walletText = walletText }
         if let walletAddress { state.walletAddress = walletAddress }
         stateHandler(state)
@@ -162,6 +206,19 @@ final class BLESyncManager: NSObject {
         case 4, 5: update(syncText: "Sending calendar")
         case 6: update(syncText: "Calendar updated")
         case 7: update(syncText: "X3 rejected snapshot (error \(data[2]))")
+        default: break
+        }
+    }
+
+    private func handleWeatherStatus(_ data: Data) {
+        guard data.count == 12 else { return }
+        switch data[1] {
+        case 1: update(weatherText: "X3 is advertising")
+        case 2: update(weatherText: "X3 connected")
+        case 3: update(weatherText: "Confirm pairing on iPhone")
+        case 4, 5: update(weatherText: "Sending weather")
+        case 6: update(weatherText: "Weather updated")
+        case 7: update(weatherText: "X3 rejected weather (error \(data[2]))")
         default: break
         }
     }
@@ -203,6 +260,9 @@ final class BLESyncManager: NSObject {
         calendarControl = nil
         calendarData = nil
         calendarStatus = nil
+        weatherControl = nil
+        weatherData = nil
+        weatherStatus = nil
         walletControl = nil
         walletData = nil
         walletStatus = nil
@@ -268,7 +328,8 @@ extension BLESyncManager: CBPeripheralDelegate {
         for service in peripheral.services ?? [] {
             if service.uuid == Self.calendarServiceUUID {
                 peripheral.discoverCharacteristics(
-                    [Self.calendarControlUUID, Self.calendarDataUUID, Self.calendarStatusUUID], for: service)
+                    [Self.calendarControlUUID, Self.calendarDataUUID, Self.calendarStatusUUID,
+                     Self.weatherControlUUID, Self.weatherDataUUID, Self.weatherStatusUUID], for: service)
             } else if service.uuid == Self.walletServiceUUID {
                 peripheral.discoverCharacteristics(
                     [Self.walletControlUUID, Self.walletDataUUID, Self.walletStatusUUID], for: service)
@@ -287,6 +348,12 @@ extension BLESyncManager: CBPeripheralDelegate {
             case Self.calendarDataUUID: calendarData = characteristic
             case Self.calendarStatusUUID:
                 calendarStatus = characteristic
+                peripheral.setNotifyValue(true, for: characteristic)
+                peripheral.readValue(for: characteristic)
+            case Self.weatherControlUUID: weatherControl = characteristic
+            case Self.weatherDataUUID: weatherData = characteristic
+            case Self.weatherStatusUUID:
+                weatherStatus = characteristic
                 peripheral.setNotifyValue(true, for: characteristic)
                 peripheral.readValue(for: characteristic)
             case Self.walletControlUUID: walletControl = characteristic
@@ -308,7 +375,8 @@ extension BLESyncManager: CBPeripheralDelegate {
             sendingWallet = false
             if walletWasSending { pendingWalletRequest = nil }
             writeQueue.removeAll(keepingCapacity: true)
-            update(syncText: error.localizedDescription, walletText: error.localizedDescription)
+            update(syncText: error.localizedDescription, weatherText: error.localizedDescription,
+                   walletText: error.localizedDescription)
             if walletWasSending { walletFailureHandler(error.localizedDescription) }
             return
         }
@@ -319,6 +387,8 @@ extension BLESyncManager: CBPeripheralDelegate {
         guard error == nil, let value = characteristic.value else { return }
         if characteristic.uuid == Self.calendarStatusUUID {
             handleCalendarStatus(value)
+        } else if characteristic.uuid == Self.weatherStatusUUID {
+            handleWeatherStatus(value)
         } else if characteristic.uuid == Self.walletStatusUUID {
             handleWalletStatus(value)
         }

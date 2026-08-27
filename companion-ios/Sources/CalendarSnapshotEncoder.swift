@@ -70,7 +70,7 @@ enum CalendarSnapshotEncoder {
     }
 }
 
-private struct WireWriter {
+struct WireWriter {
     var data = Data()
 
     mutating func appendUInt8(_ value: UInt8) { data.append(value) }

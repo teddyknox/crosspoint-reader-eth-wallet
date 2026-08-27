@@ -13,6 +13,7 @@
 #include "fontIds.h"
 #include "phone/PhoneSnapshotStore.h"
 #include "phone/PhoneSyncConfig.h"
+#include "phone/WeatherSnapshotStore.h"
 
 PhoneDashboardActivity::PhoneDashboardActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
                                                const bool automaticWake, const bool displayOnly)
@@ -49,6 +50,16 @@ void PhoneDashboardActivity::finishAutomaticSync(const bool repaint) {
 
 void PhoneDashboardActivity::loop() {
   if (displayOnly) return;
+  if (PHONE_SYNC_BLE.takeWeatherSnapshot(weatherIncoming)) {
+    const auto weatherResult = WEATHER_SNAPSHOT_STORE.save(weatherIncoming);
+    const bool accepted = weatherResult != phone_sync::WeatherSnapshotStore::SaveResult::Error &&
+                          weatherResult != phone_sync::WeatherSnapshotStore::SaveResult::Stale;
+    const auto error = weatherResult == phone_sync::WeatherSnapshotStore::SaveResult::Stale
+                           ? phone_sync::SyncError::StaleSnapshot
+                       : accepted ? phone_sync::SyncError::None
+                                  : phone_sync::SyncError::StorageFailure;
+    PHONE_SYNC_BLE.acknowledgeWeather(weatherIncoming.sequence, accepted, error);
+  }
   phone_sync::CalendarSnapshot incoming{};
   if (PHONE_SYNC_BLE.takeSnapshot(incoming)) {
     const auto result = PHONE_SNAPSHOT_STORE.save(incoming);

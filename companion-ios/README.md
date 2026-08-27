@@ -15,9 +15,11 @@ The companion never stores or receives the wallet private key. Requests are sign
 - The matching fork firmware installed on an Xteink X3.
 - Bluetooth enabled on both devices.
 
-The app requests Calendar access for Daily Calendar, Camera access for WalletConnect QR scanning, and Bluetooth access for both services.
+The app requests Calendar access for Daily Calendar, current-location access for Weather, Camera access for WalletConnect QR scanning, and Bluetooth access for the X3 services.
 
 After granting Calendar access, open **Shown calendars** on the companion home screen to choose which EventKit calendars are included in X3 snapshots. **Select All** remains dynamic and includes calendars added later; any custom selection includes only the calendars explicitly checked.
+
+Weather uses Apple's supported WeatherKit service at the phone's current location; iOS does not expose the built-in Weather app's private data store. Enable **WeatherKit** for the `com.teddyknox.X3Companion` App ID in the Apple Developer portal before installing a signed device build. The companion fetches current conditions and a five-day forecast, retains the last successful result for background BLE wakes, and shows Apple's required attribution link and mark.
 
 ## Build and run
 

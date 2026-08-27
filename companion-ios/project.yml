@@ -34,14 +34,16 @@ targets:
               - x3companion
         X3WalletConnectAccessGroup: $(DEVELOPMENT_TEAM).$(PRODUCT_BUNDLE_IDENTIFIER)
         X3ReownProjectID: b0946cf7dcf5c972746c641a2817e7db
-        NSBluetoothAlwaysUsageDescription: X3 Companion uses Bluetooth to sync your calendar and send transactions to your Xteink X3 for review and signing.
+        NSBluetoothAlwaysUsageDescription: X3 Companion uses Bluetooth to sync calendar and weather data and send transactions to your Xteink X3 for review and signing.
         NSCameraUsageDescription: X3 Companion uses the camera to scan WalletConnect pairing QR codes.
         NSCalendarsFullAccessUsageDescription: X3 Companion reads today's events so it can send a display-only snapshot to your Xteink X3.
+        NSLocationWhenInUseUsageDescription: X3 Companion uses your current location to fetch an Apple Weather forecast for your Xteink X3.
         UIBackgroundModes:
           - bluetooth-central
         UILaunchScreen: {}
     settings:
       base:
+        CODE_SIGN_ENTITLEMENTS: Sources/X3Companion.entitlements
         PRODUCT_BUNDLE_IDENTIFIER: com.teddyknox.X3Companion
         TARGETED_DEVICE_FAMILY: "1"
   X3CompanionTests:

@@ -6,7 +6,7 @@
 
 class CustomAppsActivity final : public UiListActivity {
  public:
-  static constexpr size_t APP_COUNT = 2;
+  static constexpr size_t APP_COUNT = 3;
 
   CustomAppsActivity(GfxRenderer& renderer, MappedInputManager& mappedInput);
 

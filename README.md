@@ -23,6 +23,7 @@ The private key is generated, encrypted, stored, and used on the X3. The iOS com
 
 - Wallet home, send, receive, network, and WalletConnect screens.
 - Configurable calendar selection for the X3's daily calendar, including all and none modes.
+- Current conditions and a five-day forecast from Apple Weather, fetched at the phone's current location and cached on the X3.
 - WalletConnect v2 pairing by camera QR scan, deep link, or pasted `wc:` URI.
 - Automatic pending-nonce lookup, gas estimation, priority-fee lookup, and transaction submission.
 - Configurable HTTPS JSON-RPC endpoint, stored in the iOS Keychain and checked against its chain ID.
@@ -139,10 +140,10 @@ xcodebuild test \
 
 Repository layout:
 
-- `src/apps/` — Daily Calendar and Ethereum Wallet activities.
+- `src/apps/` — Daily Calendar, Weather, and Ethereum Wallet activities.
 - `src/wallet/` and `lib/EvmWallet/` — encrypted key vault, Ethereum parsing, hashing, and signing.
 - `lib/hal/HalBle*` — bonded BLE services for calendar sync and wallet requests.
-- `lib/PhoneSync/` and `src/phone/` — bounded calendar wire protocol and snapshot persistence.
+- `lib/PhoneSync/` and `src/phone/` — bounded calendar/weather wire protocols and snapshot persistence.
 - `companion-ios/` — SwiftUI companion, WalletConnect bridge, RPC client, and iOS tests.
 - `test/evm_wallet/` and `test/phone_sync/` — native protocol and cryptographic test coverage.
 

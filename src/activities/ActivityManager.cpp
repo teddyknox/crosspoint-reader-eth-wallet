@@ -290,7 +290,7 @@ void ActivityManager::goHome(HomeMenuItem initialMenuItem, bool cleanInitialRefr
       initialMenuItem = HomeMenuItem::RECENTS;
     } else if (activityName == "OpdsBookBrowser") {
       initialMenuItem = HomeMenuItem::OPDS_BROWSER;
-    } else if (activityName == "CustomApps" || activityName == "PhoneDashboard") {
+    } else if (activityName == "CustomApps" || activityName == "PhoneDashboard" || activityName == "Weather") {
       initialMenuItem = HomeMenuItem::APPS;
     } else if (activityName == "CrossPointWebServer") {
       initialMenuItem = HomeMenuItem::FILE_TRANSFER;

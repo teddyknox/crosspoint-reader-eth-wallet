@@ -6,10 +6,9 @@
 
 #include "activities/Activity.h"
 
-class PhoneDashboardActivity final : public Activity {
+class WeatherActivity final : public Activity {
  public:
-  PhoneDashboardActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, bool automaticWake,
-                         bool displayOnly = false);
+  WeatherActivity(GfxRenderer& renderer, MappedInputManager& mappedInput);
 
   void onEnter() override;
   void onExit() override;
@@ -18,19 +17,14 @@ class PhoneDashboardActivity final : public Activity {
   bool preventAutoSleep() override;
 
  private:
-  const bool automaticWake;
-  const bool displayOnly;
   bool hasSnapshot = false;
   bool radioStarted = false;
   bool windowExpired = false;
   uint32_t startedAt = 0;
-  uint32_t automaticSleepAt = 0;
   phone_sync::SyncState lastState = phone_sync::SyncState::Stopped;
   uint32_t lastPasskey = 0;
-  phone_sync::CalendarSnapshot snapshot{};
-  phone_sync::WeatherSnapshot weatherIncoming{};
+  phone_sync::WeatherSnapshot snapshot{};
 
   void startSyncWindow();
-  void finishAutomaticSync(bool repaint);
   const char* statusText() const;
 };

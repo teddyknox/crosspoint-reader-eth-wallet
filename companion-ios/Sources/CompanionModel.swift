@@ -10,6 +10,15 @@ final class CompanionModel: ObservableObject {
     @Published private(set) var eventCount = 0
     @Published private(set) var calendarOptions: [CalendarOption] = []
     @Published private(set) var selectedCalendarIdentifiers: Set<String>?
+    @Published private(set) var weatherLocationText = "Current location"
+    @Published private(set) var weatherSummaryText = "Not configured"
+    @Published private(set) var weatherStatusText = "Weather not configured"
+    @Published private(set) var hasWeatherLocationAccess = false
+    @Published private(set) var hasWeatherSnapshot = false
+    @Published private(set) var isRefreshingWeather = false
+    @Published private(set) var weatherAttributionURL: URL?
+    @Published private(set) var weatherAttributionMarkLightURL: URL?
+    @Published private(set) var weatherAttributionMarkDarkURL: URL?
     @Published private(set) var bluetoothText = "Starting"
     @Published private(set) var bluetoothReady = false
     @Published private(set) var syncText = "Waiting for X3"
@@ -22,6 +31,7 @@ final class CompanionModel: ObservableObject {
     let rpcSettings = RPCSettings()
 
     private let calendar = CalendarSnapshotProvider()
+    private let weather = WeatherSnapshotProvider()
     private var pendingRequest: PreparedWalletRequest?
     lazy var walletConnect = WalletConnectManager(
         customRPCProvider: { [weak self] in
@@ -37,6 +47,11 @@ final class CompanionModel: ObservableObject {
         let result = try await self.calendar.snapshot()
         await MainActor.run { self.eventCount = result.eventCount }
         return result.data
+    } weatherSnapshot: { [weak self] in
+        guard let self else { throw WeatherProviderError.weatherUnavailable }
+        let result = try await self.weather.snapshot()
+        await MainActor.run { self.applyWeather(result) }
+        return result.data
     } walletResult: { [weak self] requestID, _, signature in
         Task { @MainActor in self?.completeWalletRequest(requestID: requestID, signature: signature) }
     } walletFailure: { [weak self] message in
@@ -45,10 +60,15 @@ final class CompanionModel: ObservableObject {
 
     func start() async {
         refreshCalendarStatus()
+        refreshWeatherStatus()
         walletConnect.start()
         bluetooth.start()
         if hasCalendarAccess {
             await refreshEventCount()
+        }
+        await refreshWeatherAttribution()
+        if hasWeatherLocationAccess {
+            await refreshWeather()
         }
     }
 
@@ -68,6 +88,40 @@ final class CompanionModel: ObservableObject {
     func syncNow() {
         syncText = "Looking for X3"
         bluetooth.start(forceReconnect: true)
+    }
+
+    func requestWeatherAccess() async {
+        isRefreshingWeather = true
+        weatherStatusText = "Requesting location"
+        defer {
+            isRefreshingWeather = false
+            refreshWeatherStatus()
+        }
+        do {
+            let result = try await weather.requestAccessAndRefresh()
+            applyWeather(result)
+            bluetooth.start()
+        } catch {
+            weatherStatusText = error.localizedDescription
+        }
+    }
+
+    func refreshWeather() async {
+        guard weather.hasLocationAccess else {
+            weatherStatusText = "Location access required"
+            return
+        }
+        isRefreshingWeather = true
+        weatherStatusText = "Refreshing"
+        defer {
+            isRefreshingWeather = false
+            refreshWeatherStatus()
+        }
+        do {
+            applyWeather(try await weather.refresh())
+        } catch {
+            weatherStatusText = error.localizedDescription
+        }
     }
 
     var calendarSelectionText: String {
@@ -167,6 +221,30 @@ final class CompanionModel: ObservableObject {
         refreshCalendars()
     }
 
+    private func refreshWeatherStatus() {
+        hasWeatherLocationAccess = weather.hasLocationAccess
+        hasWeatherSnapshot = weather.hasCachedSnapshot
+        weatherLocationText = weather.cachedLocation
+        weatherSummaryText = weather.cachedSummary
+        if !hasWeatherLocationAccess, !hasWeatherSnapshot {
+            weatherStatusText = "Location required"
+        }
+    }
+
+    private func applyWeather(_ result: WeatherSnapshotResult) {
+        hasWeatherSnapshot = true
+        weatherLocationText = result.location
+        weatherSummaryText = result.summary
+        weatherStatusText = result.usedCachedData ? "Using saved forecast" : "Ready to sync"
+    }
+
+    private func refreshWeatherAttribution() async {
+        guard let attribution = try? await weather.attribution() else { return }
+        weatherAttributionURL = attribution.legalPageURL
+        weatherAttributionMarkLightURL = attribution.combinedMarkLightURL
+        weatherAttributionMarkDarkURL = attribution.combinedMarkDarkURL
+    }
+
     private func refreshEventCount() async {
         do {
             eventCount = try await calendar.snapshot().eventCount
@@ -179,6 +257,7 @@ final class CompanionModel: ObservableObject {
         bluetoothReady = state.bluetoothReady
         bluetoothText = state.bluetoothText
         syncText = state.syncText
+        weatherStatusText = state.weatherText
         walletText = state.walletText
         walletAddress = state.walletAddress
         walletConnect.updateWalletAddress(state.walletAddress)

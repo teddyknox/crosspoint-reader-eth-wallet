@@ -10,7 +10,7 @@
 
 namespace custom_apps {
 
-enum class AppId { PhoneCalendar, EvmWallet };
+enum class AppId { PhoneCalendar, Weather, EvmWallet };
 
 struct AppDescriptor {
   AppId id;

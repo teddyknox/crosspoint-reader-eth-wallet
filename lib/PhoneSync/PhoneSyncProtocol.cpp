@@ -44,4 +44,31 @@ bool validateSnapshot(const CalendarSnapshot& snapshot) {
   return true;
 }
 
+uint32_t weatherSnapshotCrc32(const WeatherSnapshot& snapshot) {
+  return crc32(reinterpret_cast<const uint8_t*>(&snapshot), offsetof(WeatherSnapshot, crc32));
+}
+
+bool validateWeatherSnapshot(const WeatherSnapshot& snapshot) {
+  if (std::memcmp(snapshot.magic, WEATHER_SNAPSHOT_MAGIC, sizeof(WEATHER_SNAPSHOT_MAGIC)) != 0 ||
+      snapshot.version != WEATHER_PROTOCOL_VERSION || snapshot.wireSize != sizeof(WeatherSnapshot) ||
+      snapshot.dayCount > MAX_FORECAST_DAYS || !containsNull(snapshot.location, sizeof(snapshot.location)) ||
+      !containsNull(snapshot.condition, sizeof(snapshot.condition)) ||
+      !containsNull(snapshot.temperature, sizeof(snapshot.temperature)) ||
+      !containsNull(snapshot.apparentTemperature, sizeof(snapshot.apparentTemperature)) ||
+      !containsNull(snapshot.humidity, sizeof(snapshot.humidity)) ||
+      !containsNull(snapshot.wind, sizeof(snapshot.wind)) || snapshot.crc32 != weatherSnapshotCrc32(snapshot)) {
+    return false;
+  }
+
+  for (size_t i = 0; i < snapshot.dayCount; ++i) {
+    const auto& day = snapshot.days[i];
+    if (!containsNull(day.dayLabel, sizeof(day.dayLabel)) || !containsNull(day.condition, sizeof(day.condition)) ||
+        !containsNull(day.highLabel, sizeof(day.highLabel)) || !containsNull(day.lowLabel, sizeof(day.lowLabel)) ||
+        !containsNull(day.precipitationLabel, sizeof(day.precipitationLabel))) {
+      return false;
+    }
+  }
+  return true;
+}
+
 }  // namespace phone_sync

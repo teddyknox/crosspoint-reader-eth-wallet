@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1E3364E52D5C7AEFA768C350 /* EvmTransactionEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C853BE07EEA026CF570BE36 /* EvmTransactionEncoderTests.swift */; };
+		280EB003AFD906A854A1D5E4 /* WeatherSnapshotProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFB430BE4F78231F0F46B69E /* WeatherSnapshotProvider.swift */; };
 		28F36E67C9E96C26D2911F4A /* ReownSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBECC6C1F64C069A8DE113A4 /* ReownSupport.swift */; };
 		300C2C5B557915DC7BDEC15F /* RPCSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DF9388B52F1B795C8AAC934 /* RPCSettingsView.swift */; };
 		325FFE08AEDFCFBC22AAA7E5 /* WalletConnect in Frameworks */ = {isa = PBXBuildFile; productRef = 7C60D326F635FD82D2E643AE /* WalletConnect */; };
@@ -21,6 +22,7 @@
 		6D7AC09BC1E69CA6BFC2D6C3 /* EvmTransactionEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2389F60C577214AD53E570D6 /* EvmTransactionEncoder.swift */; };
 		6D8E279AB23FDBAE0159733A /* CalendarSnapshotProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F65E40016FB8F2DC96F11413 /* CalendarSnapshotProvider.swift */; };
 		71079A11A211596F74208A0C /* RPCSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E4DF6C62C4AD7146988D7CE /* RPCSettings.swift */; };
+		7689A5C868199C24FF49717B /* WeatherSnapshotEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = E90E481B1C9A83D16D0D8E3B /* WeatherSnapshotEncoder.swift */; };
 		7B45D35811EDC212FB459865 /* WalletConnectQRScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D6EEDD12C56B24163BAB00F /* WalletConnectQRScanner.swift */; };
 		8DA3CE93F91F8D286CF89150 /* X3CompanionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C625A63C6F3C791A9AF4FBA1 /* X3CompanionApp.swift */; };
 		9C46ACADDBB7E791FDB6CC94 /* WalletConnectNetworking in Frameworks */ = {isa = PBXBuildFile; productRef = EADC993F04BA9988E82FEEBD /* WalletConnectNetworking */; };
@@ -32,6 +34,7 @@
 		C18D95BAA5F0F81F8B79103D /* WalletHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D3E0842B43E24E1D4D0AB45 /* WalletHomeView.swift */; };
 		C1B433C0ADEC3B544FFF13F9 /* EvmSignRequestEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5F1711A03E90D5394EF69DC /* EvmSignRequestEncoder.swift */; };
 		CE40AE5C5B2D314AD93025B0 /* WalletComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE1D47DF13BF2736AA478F85 /* WalletComponents.swift */; };
+		FBFFB4E25733495E156E50AE /* WeatherSnapshotEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28224FD025E6F8440C9E4A6 /* WeatherSnapshotEncoderTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,11 +65,15 @@
 		6DF9388B52F1B795C8AAC934 /* RPCSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RPCSettingsView.swift; sourceTree = "<group>"; };
 		A1F7D995086C879395F05CC4 /* ReownRPCClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReownRPCClient.swift; sourceTree = "<group>"; };
 		A7248246FE5F8C871653A286 /* EvmWalletView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmWalletView.swift; sourceTree = "<group>"; };
+		AC7831D8D345AAF2943C0B8A /* X3Companion.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = X3Companion.entitlements; sourceTree = "<group>"; };
 		C5F1711A03E90D5394EF69DC /* EvmSignRequestEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmSignRequestEncoder.swift; sourceTree = "<group>"; };
 		C625A63C6F3C791A9AF4FBA1 /* X3CompanionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = X3CompanionApp.swift; sourceTree = "<group>"; };
 		DE1D47DF13BF2736AA478F85 /* WalletComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletComponents.swift; sourceTree = "<group>"; };
+		DFB430BE4F78231F0F46B69E /* WeatherSnapshotProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshotProvider.swift; sourceTree = "<group>"; };
+		E90E481B1C9A83D16D0D8E3B /* WeatherSnapshotEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshotEncoder.swift; sourceTree = "<group>"; };
 		E987305D9689D21D21435450 /* BLESyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLESyncManager.swift; sourceTree = "<group>"; };
 		EBECC6C1F64C069A8DE113A4 /* ReownSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReownSupport.swift; sourceTree = "<group>"; };
+		F28224FD025E6F8440C9E4A6 /* WeatherSnapshotEncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherSnapshotEncoderTests.swift; sourceTree = "<group>"; };
 		F65E40016FB8F2DC96F11413 /* CalendarSnapshotProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarSnapshotProvider.swift; sourceTree = "<group>"; };
 		F896B821AC21271C252E1894 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		FE16151B7BCD06CAD03CCCB5 /* EvmTransactionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmTransactionService.swift; sourceTree = "<group>"; };
@@ -91,6 +98,7 @@
 			children = (
 				53E1D11DDBF0EC85A0D91701 /* CalendarSnapshotEncoderTests.swift */,
 				6C853BE07EEA026CF570BE36 /* EvmTransactionEncoderTests.swift */,
+				F28224FD025E6F8440C9E4A6 /* WeatherSnapshotEncoderTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -118,6 +126,9 @@
 				1D6EEDD12C56B24163BAB00F /* WalletConnectQRScanner.swift */,
 				5A41C7BB6CAC5ECA0941FAFE /* WalletConnectView.swift */,
 				6D3E0842B43E24E1D4D0AB45 /* WalletHomeView.swift */,
+				E90E481B1C9A83D16D0D8E3B /* WeatherSnapshotEncoder.swift */,
+				DFB430BE4F78231F0F46B69E /* WeatherSnapshotProvider.swift */,
+				AC7831D8D345AAF2943C0B8A /* X3Companion.entitlements */,
 				C625A63C6F3C791A9AF4FBA1 /* X3CompanionApp.swift */,
 			);
 			path = Sources;
@@ -222,6 +233,7 @@
 			files = (
 				5D7AD5A890F1FD2631B8AF8A /* CalendarSnapshotEncoderTests.swift in Sources */,
 				1E3364E52D5C7AEFA768C350 /* EvmTransactionEncoderTests.swift in Sources */,
+				FBFFB4E25733495E156E50AE /* WeatherSnapshotEncoderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -248,6 +260,8 @@
 				7B45D35811EDC212FB459865 /* WalletConnectQRScanner.swift in Sources */,
 				B6D8F7EB7D7A25856BB27346 /* WalletConnectView.swift in Sources */,
 				C18D95BAA5F0F81F8B79103D /* WalletHomeView.swift in Sources */,
+				7689A5C868199C24FF49717B /* WeatherSnapshotEncoder.swift in Sources */,
+				280EB003AFD906A854A1D5E4 /* WeatherSnapshotProvider.swift in Sources */,
 				8DA3CE93F91F8D286CF89150 /* X3CompanionApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -267,6 +281,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/X3Companion.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Sources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -421,6 +436,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/X3Companion.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Sources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
