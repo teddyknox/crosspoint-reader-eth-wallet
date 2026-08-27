@@ -11,7 +11,7 @@
 
 class EvmWalletActivity final : public Activity {
  public:
-  EvmWalletActivity(GfxRenderer& renderer, MappedInputManager& mappedInput);
+  EvmWalletActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, bool displayOnly = false);
 
   void onEnter() override;
   void onExit() override;
@@ -20,6 +20,7 @@ class EvmWalletActivity final : public Activity {
   bool preventAutoSleep() override;
 
  private:
+  const bool displayOnly;
   enum class Screen : uint8_t {
     CreateWarning,
     SetPin,
@@ -37,6 +38,7 @@ class EvmWalletActivity final : public Activity {
 
   Screen screen = Screen::CreateWarning;
   bool approved = false;
+  bool hasAddress = false;
   uint32_t lastPasskey = 0;
   uint32_t bleRestartAt = 0;
   uint8_t bleRestartAttempts = 0;
@@ -61,6 +63,7 @@ class EvmWalletActivity final : public Activity {
   bool pinChangeError = false;
 
   void startRadio();
+  void setAsSleepScreen();
   void scheduleRadioRestart();
   void restartRadioIfNeeded();
   void completeUnlock();

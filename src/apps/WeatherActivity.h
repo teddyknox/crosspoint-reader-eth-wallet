@@ -8,7 +8,7 @@
 
 class WeatherActivity final : public Activity {
  public:
-  WeatherActivity(GfxRenderer& renderer, MappedInputManager& mappedInput);
+  WeatherActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, bool displayOnly = false);
 
   void onEnter() override;
   void onExit() override;
@@ -17,6 +17,7 @@ class WeatherActivity final : public Activity {
   bool preventAutoSleep() override;
 
  private:
+  const bool displayOnly;
   bool hasSnapshot = false;
   bool radioStarted = false;
   bool windowExpired = false;
@@ -26,5 +27,6 @@ class WeatherActivity final : public Activity {
   phone_sync::WeatherSnapshot snapshot{};
 
   void startSyncWindow();
+  void setAsSleepScreen();
   const char* statusText() const;
 };

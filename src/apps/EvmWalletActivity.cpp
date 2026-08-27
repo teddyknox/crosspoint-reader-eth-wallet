@@ -10,6 +10,7 @@
 #include <cstring>
 #include <string>
 
+#include "CrossPointSettings.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "util/QrUtils.h"
@@ -86,8 +87,16 @@ void formatPersonalMessagePage(const evm_wallet::ByteSpan message, const uint8_t
 
 }  // namespace
 
-EvmWalletActivity::EvmWalletActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
-    : Activity("EvmWallet", renderer, mappedInput) {}
+EvmWalletActivity::EvmWalletActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const bool displayOnly)
+    : Activity("EvmWallet", renderer, mappedInput), displayOnly(displayOnly) {}
+
+void EvmWalletActivity::setAsSleepScreen() {
+  if (SETTINGS.sleepScreen != CrossPointSettings::SLEEP_SCREEN_MODE::APP_WALLET) {
+    SETTINGS.sleepScreen = CrossPointSettings::SLEEP_SCREEN_MODE::APP_WALLET;
+    SETTINGS.saveToFile();
+  }
+  requestUpdate();
+}
 
 void EvmWalletActivity::startRadio() {
   bleRestartAt = 0;
@@ -128,7 +137,8 @@ void EvmWalletActivity::restartRadioIfNeeded() {
 }
 
 void EvmWalletActivity::completeUnlock() {
-  if (EVM_KEY_VAULT.address(walletAddress)) {
+  hasAddress = EVM_KEY_VAULT.address(walletAddress);
+  if (hasAddress) {
     failedPinAttempts = 0;
     pinLockedUntil = 0;
     pinError = false;
@@ -189,6 +199,12 @@ void EvmWalletActivity::onEnter() {
   Activity::onEnter();
   EVM_KEY_VAULT.lock();
   resetPinEntry();
+  if (displayOnly) {
+    hasAddress = EVM_KEY_VAULT.address(walletAddress);
+    screen = Screen::Waiting;
+    requestUpdate();
+    return;
+  }
   screen = EVM_KEY_VAULT.isEncrypted() ? Screen::UnlockPin
            : EVM_KEY_VAULT.exists()    ? Screen::SetPin
                                        : Screen::CreateWarning;
@@ -203,7 +219,7 @@ void EvmWalletActivity::onExit() {
   Activity::onExit();
 }
 
-bool EvmWalletActivity::preventAutoSleep() { return EVM_WALLET_BLE.isActive() || bleRestartAt != 0; }
+bool EvmWalletActivity::preventAutoSleep() { return !displayOnly && (EVM_WALLET_BLE.isActive() || bleRestartAt != 0); }
 
 void EvmWalletActivity::handleRequest() {
   bool valid = false;
@@ -423,6 +439,7 @@ void EvmWalletActivity::handlePinInput() {
 }
 
 void EvmWalletActivity::loop() {
+  if (displayOnly) return;
   if (screen == Screen::CreateWarning) {
     if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
       finish();
@@ -441,9 +458,15 @@ void EvmWalletActivity::loop() {
     return;
   }
 
-  if (screen == Screen::Waiting && mappedInput.wasReleased(MappedInputManager::Button::Left)) {
-    beginPinChange();
-    return;
+  if (screen == Screen::Waiting) {
+    if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
+      setAsSleepScreen();
+      return;
+    }
+    if (mappedInput.wasReleased(MappedInputManager::Button::Left)) {
+      beginPinChange();
+      return;
+    }
   }
 
   restartRadioIfNeeded();
@@ -755,17 +778,17 @@ void EvmWalletActivity::render(RenderLock&&) {
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding, width, metrics.headerHeight}, tr(STR_EVM_WALLET));
   int y = metrics.topPadding + metrics.headerHeight + metrics.verticalSpacing * 2;
 
-  if (screen == Screen::CreateWarning) {
+  if (!displayOnly && screen == Screen::CreateWarning) {
     renderer.drawCenteredText(UI_12_FONT_ID, y + 20, tr(STR_EVM_EXPERIMENTAL), true, EpdFontFamily::BOLD);
     renderer.drawCenteredText(UI_10_FONT_ID, y + 62, tr(STR_EVM_PIN_PROTECTION), true);
     renderer.drawCenteredText(UI_10_FONT_ID, y + 94, tr(STR_EVM_TEST_FUNDS_ONLY), true, EpdFontFamily::BOLD);
     const auto labels = mappedInput.mapLabels(tr(STR_BACK), tr(STR_EVM_CREATE_WALLET), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
-  } else if (screen == Screen::SetPin || screen == Screen::ConfirmPin || screen == Screen::UnlockPin ||
-             screen == Screen::ChangeCurrentPin || screen == Screen::ChangeNewPin ||
-             screen == Screen::ChangeConfirmPin) {
+  } else if (!displayOnly && (screen == Screen::SetPin || screen == Screen::ConfirmPin || screen == Screen::UnlockPin ||
+                              screen == Screen::ChangeCurrentPin || screen == Screen::ChangeNewPin ||
+                              screen == Screen::ChangeConfirmPin)) {
     renderPinEntry(y);
-  } else if (screen == Screen::Review) {
+  } else if (!displayOnly && screen == Screen::Review) {
     const auto kind = static_cast<evm_wallet::SignRequestKind>(request.kind);
     if (kind == evm_wallet::SignRequestKind::Eip1559Transaction)
       renderTransactionReview(y);
@@ -779,15 +802,22 @@ void EvmWalletActivity::render(RenderLock&&) {
         tr(STR_CANCEL), reviewPage + 1 < reviewPageCount ? tr(STR_EVM_NEXT) : tr(STR_CONFIRM), "", "");
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   } else {
-    char address[43];
-    evm_wallet::formatAddress(walletAddress, address);
+    char address[43]{};
+    if (hasAddress) evm_wallet::formatAddress(walletAddress, address);
     int passkeyY = y + 164;
     GUI.drawSubHeader(renderer, Rect{0, metrics.topPadding + metrics.headerHeight, width, metrics.tabBarHeight},
-                      tr(STR_EVM_EXPERIMENTAL), screen == Screen::PinChanged ? tr(STR_EVM_PIN_CHANGED) : statusText());
+                      tr(STR_EVM_EXPERIMENTAL),
+                      displayOnly                    ? tr(STR_EVM_WALLET_LOCKED)
+                      : screen == Screen::PinChanged ? tr(STR_EVM_PIN_CHANGED)
+                                                     : statusText());
     y += metrics.tabBarHeight;
-    renderer.drawCenteredText(SMALL_FONT_ID, y + 28, tr(STR_EVM_ADDRESS), true, EpdFontFamily::BOLD);
-    renderer.drawCenteredText(SMALL_FONT_ID, y + 58, address, true);
-    if (screen == Screen::Result) {
+    if (displayOnly && !hasAddress) {
+      renderer.drawCenteredText(UI_10_FONT_ID, y + 100, tr(STR_EVM_SLEEP_ADDRESS_MISSING), true, EpdFontFamily::BOLD);
+    } else if (hasAddress) {
+      renderer.drawCenteredText(SMALL_FONT_ID, y + 28, tr(STR_EVM_ADDRESS), true, EpdFontFamily::BOLD);
+      renderer.drawCenteredText(SMALL_FONT_ID, y + 58, address, true);
+    }
+    if (!displayOnly && screen == Screen::Result) {
       renderer.drawCenteredText(UI_12_FONT_ID, y + 116, tr(STR_EVM_SIGNED), true, EpdFontFamily::BOLD);
     } else if (screen == Screen::PinChanged) {
       renderer.drawCenteredText(UI_12_FONT_ID, y + 116, tr(STR_EVM_PIN_CHANGED), true, EpdFontFamily::BOLD);
@@ -795,24 +825,33 @@ void EvmWalletActivity::render(RenderLock&&) {
       renderer.drawCenteredText(UI_12_FONT_ID, y + 116,
                                 pinChangeError ? tr(STR_EVM_PIN_CHANGE_FAILED) : tr(STR_EVM_FAILED), true,
                                 EpdFontFamily::BOLD);
-    } else {
+    } else if (hasAddress) {
       renderer.drawCenteredText(UI_10_FONT_ID, y + 116, tr(STR_EVM_OPEN_COMPANION), true);
-      constexpr int QR_SIZE = 220;
       constexpr int QR_TOP_OFFSET = 142;
-      const Rect qrBounds{(width - QR_SIZE) / 2, y + QR_TOP_OFFSET, QR_SIZE, QR_SIZE};
+      const int qrTop = y + QR_TOP_OFFSET;
+      const int reservedBottom = displayOnly ? metrics.contentSidePadding : metrics.buttonHintsHeight;
+      const int availableHeight = height - qrTop - reservedBottom;
+      const int qrSize = availableHeight < 220 ? availableHeight : 220;
+      const Rect qrBounds{(width - qrSize) / 2, qrTop, qrSize, qrSize};
       QrUtils::drawQrCode(renderer, qrBounds, std::string("ethereum:") + address);
       passkeyY = qrBounds.y + qrBounds.height + 24;
     }
-    const uint32_t passkey = EVM_WALLET_BLE.pairingPasskey();
+    const uint32_t passkey = displayOnly ? 0 : EVM_WALLET_BLE.pairingPasskey();
     if (passkey != 0) {
       char passkeyText[48];
       snprintf(passkeyText, sizeof(passkeyText), tr(STR_PHONE_SYNC_PASSKEY), static_cast<unsigned long>(passkey));
       renderer.drawCenteredText(UI_12_FONT_ID, passkeyY, passkeyText, true, EpdFontFamily::BOLD);
     }
-    const char* confirmLabel = screen == Screen::Waiting ? "" : tr(STR_DONE);
-    const char* changePinLabel = screen == Screen::Waiting ? tr(STR_EVM_CHANGE_PIN) : "";
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), confirmLabel, changePinLabel, "");
-    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    if (!displayOnly) {
+      const char* confirmLabel = screen == Screen::Waiting ? "" : tr(STR_DONE);
+      const char* changePinLabel = screen == Screen::Waiting ? tr(STR_EVM_CHANGE_PIN) : "";
+      const char* sleepLabel = screen != Screen::Waiting ? ""
+                               : SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::APP_WALLET
+                                   ? tr(STR_SELECTED)
+                                   : tr(STR_SET_SLEEP_SCREEN);
+      const auto labels = mappedInput.mapLabels(tr(STR_BACK), confirmLabel, changePinLabel, sleepLabel);
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    }
   }
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);
 }

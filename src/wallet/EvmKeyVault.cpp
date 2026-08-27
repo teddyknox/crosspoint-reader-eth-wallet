@@ -18,6 +18,7 @@ namespace {
 constexpr char NAMESPACE[] = "x3evm";
 constexpr char LEGACY_PRIVATE_KEY[] = "private";
 constexpr char ENCRYPTED_VAULT[] = "vault";
+constexpr char PUBLIC_ADDRESS[] = "address";
 constexpr uint8_t VAULT_VERSION = 1;
 // 100,000 rounds took roughly ten seconds on the X3 during the initial
 // migration. Keep accepting those records, but use a cost that keeps normal
@@ -425,10 +426,10 @@ bool EvmKeyVault::changePin(const uint8_t newPin[PIN_LENGTH]) {
     }
     if (restored && preferences.begin(NAMESPACE, true)) {
       VaultRecord restoredRecord{};
-      restored = preferences.getBytes(ENCRYPTED_VAULT, &restoredRecord, sizeof(restoredRecord)) ==
-                     sizeof(restoredRecord) &&
-                 constantTimeEqual(reinterpret_cast<const uint8_t*>(&restoredRecord),
-                                   reinterpret_cast<const uint8_t*>(&previous), sizeof(previous));
+      restored =
+          preferences.getBytes(ENCRYPTED_VAULT, &restoredRecord, sizeof(restoredRecord)) == sizeof(restoredRecord) &&
+          constantTimeEqual(reinterpret_cast<const uint8_t*>(&restoredRecord),
+                            reinterpret_cast<const uint8_t*>(&previous), sizeof(previous));
       secureZero(&restoredRecord, sizeof(restoredRecord));
       preferences.end();
     }
@@ -457,6 +458,18 @@ void EvmKeyVault::lock() {
 bool EvmKeyVault::isUnlocked() const { return unlocked; }
 
 bool EvmKeyVault::address(uint8_t output[20]) const {
+  if (!unlocked) {
+    Preferences preferences;
+    bool loaded = false;
+    if (preferences.begin(NAMESPACE, true)) {
+      loaded = preferences.getBytes(PUBLIC_ADDRESS, output, 20) == 20;
+      preferences.end();
+    }
+    if (!loaded) std::memset(output, 0, 20);
+    LOG_INF("EVM", "Cached wallet address load %s", loaded ? "succeeded" : "failed");
+    return loaded;
+  }
+
   uint8_t publicKey[64]{};
   uint8_t digest[32]{};
   int result = -1;
@@ -464,6 +477,22 @@ bool EvmKeyVault::address(uint8_t output[20]) const {
   if (result == 0) {
     evm_wallet::keccak256(publicKey, sizeof(publicKey), digest);
     std::memcpy(output, digest + 12, 20);
+    uint8_t cached[20]{};
+    Preferences preferences;
+    bool hasCached = false;
+    if (preferences.begin(NAMESPACE, true)) {
+      hasCached = preferences.getBytes(PUBLIC_ADDRESS, cached, sizeof(cached)) == sizeof(cached);
+      preferences.end();
+    }
+    if (!hasCached || !constantTimeEqual(output, cached, sizeof(cached))) {
+      bool stored = false;
+      if (preferences.begin(NAMESPACE, false)) {
+        stored = preferences.putBytes(PUBLIC_ADDRESS, output, 20) == 20;
+        preferences.end();
+      }
+      if (!stored) LOG_ERR("EVM", "Wallet address cache write failed");
+    }
+    secureZero(cached, sizeof(cached));
   } else {
     std::memset(output, 0, 20);
   }

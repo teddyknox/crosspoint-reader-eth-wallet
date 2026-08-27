@@ -11,7 +11,9 @@
 #include "CrossPointSettings.h"
 #include "OpdsServerStore.h"
 #include "apps/CustomAppsActivity.h"
+#include "apps/EvmWalletActivity.h"
 #include "apps/PhoneDashboardActivity.h"
+#include "apps/WeatherActivity.h"
 #include "boot_sleep/BootActivity.h"
 #include "boot_sleep/SleepActivity.h"
 #include "browser/OpdsBookBrowserActivity.h"
@@ -243,9 +245,34 @@ void ActivityManager::goToApps() {
   if (activity) replaceActivity(std::move(activity));
 }
 
-void ActivityManager::goToPhoneDashboard(const bool automaticWake, const bool displayOnly) {
+bool ActivityManager::goToPhoneDashboard(const bool automaticWake, const bool displayOnly) {
   auto activity = makeUniqueNoThrow<PhoneDashboardActivity>(renderer, mappedInput, automaticWake, displayOnly);
-  if (activity) replaceActivity(std::move(activity));
+  if (!activity) {
+    LOG_ERR("ACT", "OOM: phone dashboard activity");
+    return false;
+  }
+  replaceActivity(std::move(activity));
+  return true;
+}
+
+bool ActivityManager::goToWeather(const bool displayOnly) {
+  auto activity = makeUniqueNoThrow<WeatherActivity>(renderer, mappedInput, displayOnly);
+  if (!activity) {
+    LOG_ERR("ACT", "OOM: weather activity");
+    return false;
+  }
+  replaceActivity(std::move(activity));
+  return true;
+}
+
+bool ActivityManager::goToEvmWallet(const bool displayOnly) {
+  auto activity = makeUniqueNoThrow<EvmWalletActivity>(renderer, mappedInput, displayOnly);
+  if (!activity) {
+    LOG_ERR("ACT", "OOM: EVM wallet activity");
+    return false;
+  }
+  replaceActivity(std::move(activity));
+  return true;
 }
 
 void ActivityManager::goToReader(std::string path, const bool allowFastInitialRefresh) {

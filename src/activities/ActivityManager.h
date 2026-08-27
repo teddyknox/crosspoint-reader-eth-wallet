@@ -87,7 +87,9 @@ class ActivityManager {
   void goToRecentBooks();
   void goToBrowser();
   void goToApps();
-  void goToPhoneDashboard(bool automaticWake = false, bool displayOnly = false);
+  bool goToPhoneDashboard(bool automaticWake = false, bool displayOnly = false);
+  bool goToWeather(bool displayOnly = false);
+  bool goToEvmWallet(bool displayOnly = false);
   void goToReader(std::string path, bool allowFastInitialRefresh = false);
   void goToSleep(bool fromTimeout = false);
   void goToBoot();

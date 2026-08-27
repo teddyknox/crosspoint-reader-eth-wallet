@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <string>
 
+#include "CrossPointSettings.h"
 #include "SystemSleep.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
@@ -31,8 +32,8 @@ void PhoneDashboardActivity::onEnter() {
   Activity::onEnter();
   hasSnapshot = PHONE_SNAPSHOT_STORE.copySnapshot(snapshot);
   if (!displayOnly) startSyncWindow();
-  // A timer wake keeps the retained e-ink frame untouched until genuinely new
-  // calendar data arrives. Manual entry paints the cached dashboard and status.
+  // A timer wake keeps the retained e-ink frame untouched until the selected
+  // app receives genuinely new data. Manual entry paints the cached dashboard.
   if (!automaticWake) requestUpdate();
 }
 
@@ -41,10 +42,18 @@ void PhoneDashboardActivity::onExit() {
   Activity::onExit();
 }
 
-bool PhoneDashboardActivity::preventAutoSleep() { return PHONE_SYNC_BLE.isActive(); }
+bool PhoneDashboardActivity::preventAutoSleep() { return !displayOnly && PHONE_SYNC_BLE.isActive(); }
 
-void PhoneDashboardActivity::finishAutomaticSync(const bool repaint) {
-  if (repaint) requestUpdateAndWait();
+void PhoneDashboardActivity::setAsSleepScreen() {
+  if (SETTINGS.sleepScreen != CrossPointSettings::SLEEP_SCREEN_MODE::APP_CALENDAR) {
+    SETTINGS.sleepScreen = CrossPointSettings::SLEEP_SCREEN_MODE::APP_CALENDAR;
+    SETTINGS.saveToFile();
+  }
+  requestUpdate();
+}
+
+void PhoneDashboardActivity::finishAutomaticSync(const bool refreshSleepScreen) {
+  refreshSleepScreenOnAutomaticSleep |= refreshSleepScreen;
   automaticSleepAt = millis() + phone_sync::SUCCESS_DISPLAY_MS;
 }
 
@@ -59,6 +68,10 @@ void PhoneDashboardActivity::loop() {
                        : accepted ? phone_sync::SyncError::None
                                   : phone_sync::SyncError::StorageFailure;
     PHONE_SYNC_BLE.acknowledgeWeather(weatherIncoming.sequence, accepted, error);
+    if (automaticWake && accepted) {
+      finishAutomaticSync(weatherResult == phone_sync::WeatherSnapshotStore::SaveResult::Updated &&
+                          SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::APP_WEATHER);
+    }
   }
   phone_sync::CalendarSnapshot incoming{};
   if (PHONE_SYNC_BLE.takeSnapshot(incoming)) {
@@ -72,7 +85,7 @@ void PhoneDashboardActivity::loop() {
         }
         PHONE_SYNC_BLE.acknowledge(incoming.sequence, true);
         if (automaticWake) {
-          finishAutomaticSync(true);
+          finishAutomaticSync(SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::APP_CALENDAR);
         } else {
           requestUpdate();
         }
@@ -95,7 +108,7 @@ void PhoneDashboardActivity::loop() {
 
   if (automaticSleepAt != 0 && static_cast<int32_t>(millis() - automaticSleepAt) >= 0) {
     PHONE_SYNC_BLE.end();
-    enterDeepSleep(true, true);
+    enterDeepSleep(true, !refreshSleepScreenOnAutomaticSleep);
   }
 
   const uint32_t windowMs = automaticWake ? phone_sync::AUTOMATIC_SYNC_WINDOW_MS : phone_sync::MANUAL_SYNC_WINDOW_MS;
@@ -113,6 +126,10 @@ void PhoneDashboardActivity::loop() {
       lastState = currentState;
       lastPasskey = currentPasskey;
       requestUpdate();
+    }
+    if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
+      setAsSleepScreen();
+      return;
     }
     if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
       finish();
@@ -201,7 +218,11 @@ void PhoneDashboardActivity::render(RenderLock&&) {
   }
 
   if (!automaticWake && !displayOnly) {
-    const auto labels = mappedInput.mapLabels(tr(STR_BACK), PHONE_SYNC_BLE.isActive() ? "" : tr(STR_RETRY), "", "");
+    const char* sleepLabel = SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::APP_CALENDAR
+                                 ? tr(STR_SELECTED)
+                                 : tr(STR_SET_SLEEP_SCREEN);
+    const auto labels =
+        mappedInput.mapLabels(tr(STR_BACK), PHONE_SYNC_BLE.isActive() ? "" : tr(STR_RETRY), "", sleepLabel);
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
   }
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);

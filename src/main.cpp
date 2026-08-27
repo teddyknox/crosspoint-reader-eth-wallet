@@ -264,20 +264,33 @@ static bool loadSleepFrameBuffer() {
   // a WiFi activity would otherwise silentRestart() here and reboot instead.
   deepSleepInProgress = true;
 
-  phone_sync::CalendarSnapshot phoneSnapshot{};
-  const bool showPhoneCalendar =
-      gpio.deviceIsX3() && !preserveCurrentDisplay && PHONE_SNAPSHOT_STORE.copySnapshot(phoneSnapshot);
-  if (showPhoneCalendar) {
-    // E-ink retains this frame with zero power. Make the cached dashboard the
-    // X3's sleep screen regardless of which compiled-in app was active.
-    activityManager.goToPhoneDashboard(false, true);
-    activityManager.loop();
-    activityManager.requestUpdateAndWait();
-  } else if (!preserveCurrentDisplay) {
-    activityManager.goToSleep(fromTimeout);
+  bool showAppSleepScreen = false;
+  if (!preserveCurrentDisplay) {
+    switch (SETTINGS.sleepScreen) {
+      case CrossPointSettings::SLEEP_SCREEN_MODE::APP_CALENDAR:
+        showAppSleepScreen = activityManager.goToPhoneDashboard(false, true);
+        break;
+      case CrossPointSettings::SLEEP_SCREEN_MODE::APP_WEATHER:
+        showAppSleepScreen = activityManager.goToWeather(true);
+        break;
+      case CrossPointSettings::SLEEP_SCREEN_MODE::APP_WALLET:
+        showAppSleepScreen = activityManager.goToEvmWallet(true);
+        break;
+      default:
+        activityManager.goToSleep(fromTimeout);
+        break;
+    }
+    if (showAppSleepScreen) {
+      // A display-only app paints its cached public data without starting a
+      // radio or unlocking secrets. The retained e-ink frame needs no power.
+      activityManager.loop();
+      activityManager.requestUpdateAndWait();
+    } else if (SETTINGS.sleepScreen >= CrossPointSettings::SLEEP_SCREEN_MODE::APP_CALENDAR) {
+      activityManager.goToSleep(fromTimeout);
+    }
   }
 
-  if (isQuickResumeSleep && !showPhoneCalendar && !preserveCurrentDisplay) {
+  if (isQuickResumeSleep && !showAppSleepScreen && !preserveCurrentDisplay) {
     saveSleepFrameBuffer();
   } else if (Storage.exists(SLEEP_FRAME_FILE)) {
     // A stale Quick Resume frame must not replace the selected sleep screen during wake.

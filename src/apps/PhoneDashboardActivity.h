@@ -25,12 +25,14 @@ class PhoneDashboardActivity final : public Activity {
   bool windowExpired = false;
   uint32_t startedAt = 0;
   uint32_t automaticSleepAt = 0;
+  bool refreshSleepScreenOnAutomaticSleep = false;
   phone_sync::SyncState lastState = phone_sync::SyncState::Stopped;
   uint32_t lastPasskey = 0;
   phone_sync::CalendarSnapshot snapshot{};
   phone_sync::WeatherSnapshot weatherIncoming{};
 
   void startSyncWindow();
-  void finishAutomaticSync(bool repaint);
+  void setAsSleepScreen();
+  void finishAutomaticSync(bool refreshSleepScreen);
   const char* statusText() const;
 };

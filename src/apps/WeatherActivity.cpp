@@ -8,13 +8,14 @@
 #include <cstdio>
 #include <string>
 
+#include "CrossPointSettings.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "phone/PhoneSyncConfig.h"
 #include "phone/WeatherSnapshotStore.h"
 
-WeatherActivity::WeatherActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
-    : Activity("Weather", renderer, mappedInput) {}
+WeatherActivity::WeatherActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, const bool displayOnly)
+    : Activity("Weather", renderer, mappedInput), displayOnly(displayOnly) {}
 
 void WeatherActivity::startSyncWindow() {
   startedAt = millis();
@@ -27,7 +28,7 @@ void WeatherActivity::startSyncWindow() {
 void WeatherActivity::onEnter() {
   Activity::onEnter();
   hasSnapshot = WEATHER_SNAPSHOT_STORE.copySnapshot(snapshot);
-  startSyncWindow();
+  if (!displayOnly) startSyncWindow();
   requestUpdate();
 }
 
@@ -36,9 +37,18 @@ void WeatherActivity::onExit() {
   Activity::onExit();
 }
 
-bool WeatherActivity::preventAutoSleep() { return PHONE_SYNC_BLE.isActive(); }
+bool WeatherActivity::preventAutoSleep() { return !displayOnly && PHONE_SYNC_BLE.isActive(); }
+
+void WeatherActivity::setAsSleepScreen() {
+  if (SETTINGS.sleepScreen != CrossPointSettings::SLEEP_SCREEN_MODE::APP_WEATHER) {
+    SETTINGS.sleepScreen = CrossPointSettings::SLEEP_SCREEN_MODE::APP_WEATHER;
+    SETTINGS.saveToFile();
+  }
+  requestUpdate();
+}
 
 void WeatherActivity::loop() {
+  if (displayOnly) return;
   if (PHONE_SYNC_BLE.takeWeatherSnapshot(snapshot)) {
     const auto result = WEATHER_SNAPSHOT_STORE.save(snapshot);
     const bool accepted = result != phone_sync::WeatherSnapshotStore::SaveResult::Error &&
@@ -65,6 +75,10 @@ void WeatherActivity::loop() {
     lastPasskey = currentPasskey;
     requestUpdate();
   }
+  if (mappedInput.wasReleased(MappedInputManager::Button::Right)) {
+    setAsSleepScreen();
+    return;
+  }
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     finish();
     return;
@@ -76,6 +90,7 @@ void WeatherActivity::loop() {
 }
 
 const char* WeatherActivity::statusText() const {
+  if (displayOnly) return "";
   if (windowExpired) return tr(STR_PHONE_SYNC_RETRY);
   switch (PHONE_SYNC_BLE.weatherState()) {
     case phone_sync::SyncState::Advertising:
@@ -109,8 +124,7 @@ void WeatherActivity::render(RenderLock&&) {
     GUI.drawSubHeader(renderer, Rect{0, y, pageWidth, metrics.tabBarHeight}, snapshot.location, statusText());
     y += metrics.tabBarHeight + metrics.verticalSpacing * 2;
 
-    renderer.drawText(UI_12_FONT_ID, metrics.contentSidePadding, y, snapshot.temperature, true,
-                      EpdFontFamily::BOLD);
+    renderer.drawText(UI_12_FONT_ID, metrics.contentSidePadding, y, snapshot.temperature, true, EpdFontFamily::BOLD);
     const int conditionX = metrics.contentSidePadding + 112;
     const int conditionWidth = pageWidth - conditionX - metrics.contentSidePadding;
     const std::string condition =
@@ -121,9 +135,8 @@ void WeatherActivity::render(RenderLock&&) {
     char details[96];
     snprintf(details, sizeof(details), "%s %s   %s %s   %s %s", tr(STR_FEELS_LIKE), snapshot.apparentTemperature,
              tr(STR_HUMIDITY), snapshot.humidity, tr(STR_WIND), snapshot.wind);
-    const std::string detailText = renderer.truncatedText(SMALL_FONT_ID, details,
-                                                          pageWidth - metrics.contentSidePadding * 2,
-                                                          EpdFontFamily::REGULAR);
+    const std::string detailText = renderer.truncatedText(
+        SMALL_FONT_ID, details, pageWidth - metrics.contentSidePadding * 2, EpdFontFamily::REGULAR);
     renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, y, detailText.c_str());
     y += renderer.getLineHeight(SMALL_FONT_ID) + metrics.verticalSpacing * 3;
 
@@ -144,8 +157,8 @@ void WeatherActivity::render(RenderLock&&) {
       snprintf(temperatures, sizeof(temperatures), "%s  %s", day.highLabel, day.lowLabel);
       renderer.drawText(UI_10_FONT_ID, pageWidth - metrics.contentSidePadding - temperaturesWidth, y, temperatures);
       y += rowHeight;
-      renderer.drawLine(metrics.contentSidePadding, y - metrics.verticalSpacing,
-                        pageWidth - metrics.contentSidePadding, y - metrics.verticalSpacing, 1, true);
+      renderer.drawLine(metrics.contentSidePadding, y - metrics.verticalSpacing, pageWidth - metrics.contentSidePadding,
+                        y - metrics.verticalSpacing, 1, true);
     }
     renderer.drawText(SMALL_FONT_ID, metrics.contentSidePadding, pageHeight - metrics.buttonHintsHeight - 22,
                       tr(STR_WEATHER_ATTRIBUTION));
@@ -163,7 +176,13 @@ void WeatherActivity::render(RenderLock&&) {
                               EpdFontFamily::BOLD);
   }
 
-  const auto labels = mappedInput.mapLabels(tr(STR_BACK), PHONE_SYNC_BLE.isActive() ? "" : tr(STR_RETRY), "", "");
-  GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  if (!displayOnly) {
+    const char* sleepLabel = SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::APP_WEATHER
+                                 ? tr(STR_SELECTED)
+                                 : tr(STR_SET_SLEEP_SCREEN);
+    const auto labels =
+        mappedInput.mapLabels(tr(STR_BACK), PHONE_SYNC_BLE.isActive() ? "" : tr(STR_RETRY), "", sleepLabel);
+    GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+  }
   renderer.displayBuffer(HalDisplay::FAST_REFRESH);
 }

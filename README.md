@@ -37,6 +37,13 @@ The private key is generated, encrypted, stored, and used on the X3. The iOS com
 - Updates the retained e-ink screen only when calendar data changes.
 - Uses best-effort iOS background Bluetooth delivery; a missed window retries on the next wake.
 
+### App sleep screens
+
+- Daily Calendar, Weather, and Ethereum Wallet can each become the retained e-ink sleep screen.
+- Open an app and press the button labelled **Set Sleep**, or choose it under **Settings > Display > Sleep Screen**.
+- Calendar and Weather render their latest cached snapshot with Bluetooth off. Wallet remains locked and shows only its cached public address and receive QR code.
+- Periodic phone-sync wakes repaint the selected app only when its cached data changed.
+
 ### Inherited reader
 
 This fork retains CrossPoint's EPUB reader, file browser, custom fonts, Wi-Fi transfer, OPDS, Calibre, KOReader sync, themes, localization, and other reader features. The original [CrossPoint documentation](./USER_GUIDE.md) remains applicable outside the fork-specific apps.
