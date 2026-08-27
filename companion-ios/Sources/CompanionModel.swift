@@ -8,6 +8,8 @@ final class CompanionModel: ObservableObject {
     @Published private(set) var calendarAccessText = "Checking"
     @Published private(set) var hasCalendarAccess = false
     @Published private(set) var eventCount = 0
+    @Published private(set) var calendarOptions: [CalendarOption] = []
+    @Published private(set) var selectedCalendarIdentifiers: Set<String>?
     @Published private(set) var bluetoothText = "Starting"
     @Published private(set) var bluetoothReady = false
     @Published private(set) var syncText = "Waiting for X3"
@@ -66,6 +68,40 @@ final class CompanionModel: ObservableObject {
     func syncNow() {
         syncText = "Looking for X3"
         bluetooth.start(forceReconnect: true)
+    }
+
+    var calendarSelectionText: String {
+        guard !calendarOptions.isEmpty else { return hasCalendarAccess ? "No calendars" : "Unavailable" }
+        guard let selectedCalendarIdentifiers else { return "All calendars" }
+        if selectedCalendarIdentifiers.isEmpty { return "None" }
+        return "\(selectedCalendarIdentifiers.intersection(Set(calendarOptions.map(\.id))).count) of \(calendarOptions.count)"
+    }
+
+    func refreshCalendars() {
+        calendarOptions = calendar.calendarOptions
+        selectedCalendarIdentifiers = calendar.selectedCalendarIdentifiers
+    }
+
+    func isCalendarSelected(_ identifier: String) -> Bool {
+        selectedCalendarIdentifiers?.contains(identifier) ?? true
+    }
+
+    func setCalendarSelected(_ selected: Bool, identifier: String) {
+        calendar.setCalendarSelected(selected, identifier: identifier)
+        refreshCalendars()
+        Task { await refreshEventCount() }
+    }
+
+    func selectAllCalendars() {
+        calendar.selectAllCalendars()
+        refreshCalendars()
+        Task { await refreshEventCount() }
+    }
+
+    func selectNoCalendars() {
+        calendar.selectNoCalendars()
+        refreshCalendars()
+        Task { await refreshEventCount() }
     }
 
     func signEvm(chainID: String, nonce: String, recipient: String, amount: String,
@@ -128,6 +164,7 @@ final class CompanionModel: ObservableObject {
     private func refreshCalendarStatus() {
         hasCalendarAccess = calendar.hasFullAccess
         calendarAccessText = hasCalendarAccess ? "Allowed" : "Not allowed"
+        refreshCalendars()
     }
 
     private func refreshEventCount() async {

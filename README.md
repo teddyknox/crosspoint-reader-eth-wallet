@@ -22,6 +22,7 @@ The private key is generated, encrypted, stored, and used on the X3. The iOS com
 ### iOS companion and WalletConnect
 
 - Wallet home, send, receive, network, and WalletConnect screens.
+- Configurable calendar selection for the X3's daily calendar, including all and none modes.
 - WalletConnect v2 pairing by camera QR scan, deep link, or pasted `wc:` URI.
 - Automatic pending-nonce lookup, gas estimation, priority-fee lookup, and transaction submission.
 - Configurable HTTPS JSON-RPC endpoint, stored in the iOS Keychain and checked against its chain ID.

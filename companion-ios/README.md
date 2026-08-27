@@ -17,6 +17,8 @@ The companion never stores or receives the wallet private key. Requests are sign
 
 The app requests Calendar access for Daily Calendar, Camera access for WalletConnect QR scanning, and Bluetooth access for both services.
 
+After granting Calendar access, open **Shown calendars** on the companion home screen to choose which EventKit calendars are included in X3 snapshots. **Select All** remains dynamic and includes calendars added later; any custom selection includes only the calendars explicitly checked.
+
 ## Build and run
 
 The Xcode project is checked in:

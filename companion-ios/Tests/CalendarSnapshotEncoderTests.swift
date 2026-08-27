@@ -2,6 +2,20 @@ import XCTest
 @testable import X3Companion
 
 final class CalendarSnapshotEncoderTests: XCTestCase {
+    private var defaults: UserDefaults!
+
+    override func setUp() {
+        super.setUp()
+        defaults = UserDefaults(suiteName: "CalendarSelectionStoreTests")!
+        defaults.removePersistentDomain(forName: "CalendarSelectionStoreTests")
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: "CalendarSelectionStoreTests")
+        defaults = nil
+        super.tearDown()
+    }
+
     func testWireLayoutAndCRC() {
         let start = Date(timeIntervalSince1970: 1_777_000_000)
         let event = CalendarItem(identifier: "one", start: start, end: start.addingTimeInterval(1800),
@@ -27,5 +41,28 @@ final class CalendarSnapshotEncoderTests: XCTestCase {
         let titleStart = 60 + 44
         let titleBytes = data[titleStart..<(titleStart + 64)].prefix { $0 != 0 }
         XCTAssertNotNil(String(data: titleBytes, encoding: .utf8))
+    }
+
+    func testCalendarSelectionDefaultsToAllIncludingFutureCalendars() {
+        let selection = CalendarSelectionStore(defaults: defaults)
+        XCTAssertNil(selection.selectedIdentifiers)
+
+        selection.setSelected(false, identifier: "work", availableIdentifiers: ["home", "work"])
+        XCTAssertEqual(selection.selectedIdentifiers, ["home"])
+
+        // A later calendar is not silently selected once the user has made a custom choice.
+        selection.setSelected(true, identifier: "travel", availableIdentifiers: ["home", "work", "travel"])
+        XCTAssertEqual(selection.selectedIdentifiers, ["home", "travel"])
+    }
+
+    func testCalendarSelectionPersistsAllAndNoneModes() {
+        var selection = CalendarSelectionStore(defaults: defaults)
+        selection.selectNone()
+        XCTAssertEqual(selection.selectedIdentifiers, [])
+        XCTAssertEqual(CalendarSelectionStore(defaults: defaults).selectedIdentifiers, [])
+
+        selection.selectAll()
+        selection = CalendarSelectionStore(defaults: defaults)
+        XCTAssertNil(selection.selectedIdentifiers)
     }
 }

@@ -6,9 +6,49 @@ struct CalendarSnapshotResult {
     let eventCount: Int
 }
 
+struct CalendarOption: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let sourceTitle: String
+}
+
+final class CalendarSelectionStore {
+    private let defaults: UserDefaults
+    private let selectionKey = "selectedCalendarIdentifiersV1"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    // nil means "all calendars", including calendars added in the future.
+    var selectedIdentifiers: Set<String>? {
+        guard defaults.object(forKey: selectionKey) != nil else { return nil }
+        return Set(defaults.stringArray(forKey: selectionKey) ?? [])
+    }
+
+    func setSelected(_ selected: Bool, identifier: String, availableIdentifiers: Set<String>) {
+        var identifiers = selectedIdentifiers ?? availableIdentifiers
+        if selected {
+            identifiers.insert(identifier)
+        } else {
+            identifiers.remove(identifier)
+        }
+        defaults.set(Array(identifiers).sorted(), forKey: selectionKey)
+    }
+
+    func selectAll() {
+        defaults.removeObject(forKey: selectionKey)
+    }
+
+    func selectNone() {
+        defaults.set([String](), forKey: selectionKey)
+    }
+}
+
 final class CalendarSnapshotProvider {
     private let eventStore = EKEventStore()
     private let cache = SnapshotCache()
+    private let selection = CalendarSelectionStore()
 
     var hasFullAccess: Bool {
         EKEventStore.authorizationStatus(for: .event) == .fullAccess
@@ -16,6 +56,43 @@ final class CalendarSnapshotProvider {
 
     func requestAccess() async throws -> Bool {
         try await eventStore.requestFullAccessToEvents()
+    }
+
+    var calendarOptions: [CalendarOption] {
+        guard hasFullAccess else { return [] }
+        return eventStore.calendars(for: .event)
+            .map {
+                CalendarOption(
+                    id: $0.calendarIdentifier,
+                    title: $0.title,
+                    sourceTitle: $0.source.title
+                )
+            }
+            .sorted {
+                let sourceOrder = $0.sourceTitle.localizedCaseInsensitiveCompare($1.sourceTitle)
+                if sourceOrder != .orderedSame { return sourceOrder == .orderedAscending }
+                return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
+            }
+    }
+
+    var selectedCalendarIdentifiers: Set<String>? {
+        selection.selectedIdentifiers
+    }
+
+    func setCalendarSelected(_ selected: Bool, identifier: String) {
+        selection.setSelected(
+            selected,
+            identifier: identifier,
+            availableIdentifiers: Set(calendarOptions.map(\.id))
+        )
+    }
+
+    func selectAllCalendars() {
+        selection.selectAll()
+    }
+
+    func selectNoCalendars() {
+        selection.selectNone()
     }
 
     func snapshot() async throws -> CalendarSnapshotResult {
@@ -26,8 +103,22 @@ final class CalendarSnapshotProvider {
         guard let end = calendar.date(byAdding: .day, value: 1, to: start) else {
             throw CompanionError.unavailable
         }
-        let predicate = eventStore.predicateForEvents(withStart: start, end: end, calendars: nil)
-        let events = eventStore.events(matching: predicate)
+        let selectedIdentifiers = selection.selectedIdentifiers
+        let selectedCalendars = selectedIdentifiers.map { identifiers in
+            eventStore.calendars(for: .event).filter { identifiers.contains($0.calendarIdentifier) }
+        }
+        let matchingEvents: [EKEvent]
+        if selectedIdentifiers != nil, selectedCalendars?.isEmpty == true {
+            matchingEvents = []
+        } else {
+            let predicate = eventStore.predicateForEvents(
+                withStart: start,
+                end: end,
+                calendars: selectedCalendars
+            )
+            matchingEvents = eventStore.events(matching: predicate)
+        }
+        let events = matchingEvents
             .filter { $0.status != .canceled }
             .sorted { $0.startDate < $1.startDate }
             .prefix(CalendarSnapshotEncoder.maxEvents)
