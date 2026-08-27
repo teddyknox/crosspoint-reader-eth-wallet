@@ -82,7 +82,6 @@ Prerequisites: a data-capable USB-C cable, Python 3.8+, and [pioarduino](https:/
 ```bash
 git clone --recursive git@github.com:teddyknox/crosspoint-reader-eth-wallet.git
 cd crosspoint-reader-eth-wallet
-git switch feature/phone-sync-apps
 pio run -e default
 pio run -e default --target upload
 ```
