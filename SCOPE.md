@@ -1,5 +1,8 @@
 # Project Vision & Scope: CrossPoint Reader
 
+> [!NOTE]
+> This document is inherited from upstream CrossPoint Reader and describes upstream's intentionally reader-focused scope. This fork deliberately extends that scope with an X3 daily-calendar app, bonded phone sync, an on-device Ethereum signer, and an iOS WalletConnect companion. See the fork [README](./README.md) and [wallet architecture guide](./docs/ethereum-wallet.md) for the scope and safety model of those additions.
+
 The goal of CrossPoint Reader is to create an efficient, open-source reading experience for ESP32-based e-reader devices. Xteink hardware (X3, X4) is where the project started and remains a primary target, but CrossPoint is explicitly broadening to support the wider ecosystem of small ESP32 e-ink readers. We believe a dedicated e-reader should do one thing exceptionally well: **facilitate focused reading.**
 
 ## 1. Core Mission

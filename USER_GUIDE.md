@@ -555,6 +555,28 @@ See [docs/sd-card-fonts.md](./docs/sd-card-fonts.md) for full installation detai
 
 ---
 
+### 3.9 Fork Apps: Daily Calendar and Ethereum Wallet
+
+This fork adds an **Apps** entry to the home screen on the Xteink X3.
+
+#### Daily Calendar
+
+Open **Apps > Daily Calendar** while X3 Companion is running on the paired iPhone. On first use, enter the six-digit passkey shown by the X3 in the iOS Bluetooth pairing prompt. The X3 displays today's calendar and wakes every 15 minutes for a brief background refresh attempt.
+
+iOS background execution is best-effort. If a refresh window is missed, the current e-ink page remains visible and the X3 tries again on its next wake. Force-quitting X3 Companion generally prevents background reconnection until the app is opened again.
+
+The first bonded phone is the only accepted companion. To replace it, select **Settings > System > Forget paired phone** and pair the replacement after Bluetooth restarts.
+
+#### Ethereum Wallet
+
+Open **Apps > Ethereum Wallet** and set a six-digit PIN on first entry. The X3 generates the wallet key locally and displays its address and receive QR. Every later entry requires the PIN; use **Change PIN** inside the wallet to re-encrypt the same key under a new PIN.
+
+Keep this screen open and unlocked while preparing or receiving a WalletConnect request on the iPhone. Review every page on the X3 before confirming. Unknown smart-contract calls show only the target, value, selector, calldata size, and calldata fingerprint; they are not simulated or decoded.
+
+This is unaudited hackathon firmware with no secure element and no key recovery or export flow. Use test funds only. See [Ethereum Wallet Architecture and Security](./docs/ethereum-wallet.md) for supported request types, trust boundaries, and limitations.
+
+---
+
 ## 4. Reading Mode
 
 Once you have opened a book, the button layout changes to facilitate reading.

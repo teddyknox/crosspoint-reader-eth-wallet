@@ -1,287 +1,160 @@
-# CrossPoint Reader
+# CrossPoint X3 Ethereum Wallet
 
-[![Fund contributors](https://img.shields.io/badge/%F0%9F%91%91_Fund_contributors-royalty.dev-BB953A?style=for-the-badge&labelColor=1a1a1a)](https://app.royalty.dev/crosspoint-reader/crosspoint-reader)
+An experimental [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader) fork that turns an Xteink X3 into a phone-connected Ethereum hardware signer and always-on calendar display.
 
-CrossPoint is open-source e-reader firmware - community-built, fully hackable, free forever. It's maintained by a growing community of developers and readers who believe your device should do what you want - not what a manufacturer decided for you.
+The private key is generated, encrypted, stored, and used on the X3. The iOS companion handles WalletConnect, chain RPC calls, transaction preparation, and Bluetooth transport, but it never receives the private key.
 
-**Now running on:** ESP32C3-based Xteink [X4](https://www.xteink.com/products/xteink-x4) and [X3](https://www.xteink.com/products/xteink-x3).
+> [!WARNING]
+> This is hackathon firmware, not an audited hardware wallet. The X3 has no secure element, there is no seed backup or recovery flow, and unknown contract calls cannot be explained semantically on the device. Use test funds only.
 
-![CrossPoint Reader running on Xteink device](./docs/images/cover.jpg)
+## What this fork adds
 
-> If you're planning to buy an Xteink device, consider purchasing an **X3/X4 Developer Edition** through https://crosspointreader.com. CrossPoint receives a small share of each sale, helping fund development costs.
+### Ethereum wallet
 
-## What can CrossPoint do?
+- Generates a secp256k1 private key on the X3 from the ESP32 hardware RNG.
+- Protects wallet entry with a six-digit PIN that can be changed on-device.
+- Encrypts the private key in ESP32 NVS with AES-256-GCM and a PIN-derived PBKDF2-HMAC-SHA256 key.
+- Keeps signing and address derivation on the X3; decrypted key material is wiped when the wallet closes.
+- Displays the wallet address and an Ethereum receive QR code on both the X3 and iPhone.
+- Reviews and signs EIP-1559 transactions, EIP-712 messages, Sign-In with Ethereum requests, and personal messages.
+- Uses OS-level BLE bonding so the first paired phone is the only trusted companion until **Settings > System > Forget paired phone** is selected.
 
-- **Reader engine**: EPUB 2/3 rendering with embedded-style option, image handling, hyphenation, kerning, chapter navigation, footnotes, bookmarks, dictionary lookups ([StarDict](docs/dictionary.md)), go-to-percent, auto page turn, orientation control, focus reading, KOReader progress sync and more. 
+### iOS companion and WalletConnect
 
-- **Various formats**: native handling for `.epub`, `.xtc/.xtch`, `.txt`, and `.bmp`.
+- Wallet home, send, receive, network, and WalletConnect screens.
+- WalletConnect v2 pairing by camera QR scan, deep link, or pasted `wc:` URI.
+- Automatic pending-nonce lookup, gas estimation, priority-fee lookup, and transaction submission.
+- Configurable HTTPS JSON-RPC endpoint, stored in the iOS Keychain and checked against its chain ID.
+- BLE transport for sending requests to the X3 and returning only the resulting signature.
+- Automatic BLE restart after recoverable radio failures.
 
-- **Screenshots.**
+### Daily calendar
 
-- **Custom fonts**: install your favorite fonts on the SD card.
+- Sends a bounded snapshot of today's iOS calendar events to the X3 over BLE.
+- Wakes the X3 every 15 minutes and advertises for a 20-second refresh window.
+- Updates the retained e-ink screen only when calendar data changes.
+- Uses best-effort iOS background Bluetooth delivery; a missed window retries on the next wake.
 
-- **Tilt page turn (X3 only)**.
+### Inherited reader
 
-- **Library workflow**: folder browser, hidden-file toggle, long-press delete, recent books, SD-cache management.
+This fork retains CrossPoint's EPUB reader, file browser, custom fonts, Wi-Fi transfer, OPDS, Calibre, KOReader sync, themes, localization, and other reader features. The original [CrossPoint documentation](./USER_GUIDE.md) remains applicable outside the fork-specific apps.
 
-- **Wireless workflows**:
-  
-  - File transfer web UI
-  - EPUB Optimizer
-  - Web settings UI/API (edit many device settings from browser)
-  - WebSocket fast uploads
-  - WebDAV handler
-  - AP mode (hotspot) and STA mode (join existing Wi-Fi), both with QR helpers
-  - Calibre wireless connect flow
-  - OPDS browser with saved servers (up to 8), search, pagination, and direct download
-  - OTA update checks and installs from GitHub releases
+## How the wallet is split
 
-- **Customization**: multiple themes (Classic, Lyra, Lyra Extended, RoundedRaff), sleep screen modes including transparent overlays, front/side button remapping, status bar controls, power-button behavior, refresh cadence, and more.
+| Component | Responsibility | Private key access |
+| --- | --- | --- |
+| X3 firmware | PIN gate, encrypted vault, request parsing, on-screen review, hashing, signing | Yes, only while unlocked |
+| iOS companion | WalletConnect, RPC requests, nonce and fee preparation, BLE relay, broadcast | No |
+| Dapp / chain RPC | Creates requests and accepts or broadcasts signed results | No |
 
-- **Localization**: 24 UI languages and counting. RTL support.
+The iPhone is a network bridge and user interface, not the signer. Every supported signing request must be confirmed with the physical X3 buttons.
 
-### Coming soon:
+## Supported Ethereum requests
 
-- More themes.
+- EIP-1559/type-2 native transfers.
+- ERC-20 `transfer` and `approve` calls with decoded recipient/spender and amount.
+- Arbitrary type-2 smart-contract calldata, including swaps, bridges, staking, multicalls, and NFT transfers when expressed as ordinary contract calls.
+- Non-empty EIP-1559 access lists. The X3 validates the RLP structure and shows address count, storage-key count, and a list fingerprint on a second review page.
+- `eth_signTransaction` and `eth_sendTransaction`.
+- Flat scalar EIP-712 data through `eth_signTypedData_v4`.
+- Strict Sign-In with Ethereum messages and reviewed `personal_sign` messages.
+- EVM L1s, L2s, and L3s identified by an `eip155` chain ID, subject to RPC availability.
 
-- Much more! stay tuned.
+Not currently supported:
 
----
+- Legacy/type-0 and EIP-2930/type-1 transactions.
+- EIP-4844/type-3 blob transactions or EIP-7702/type-4 authorizations.
+- Contract deployment because an explicit `to` address is required.
+- Nested or dynamic EIP-712 structures.
+- `eth_sign`, ERC-4337 user operations, Safe-specific flows, or `wallet_sendCalls` batches.
+- Non-EVM chains.
 
-## USB-locked devices (Xteink Unlocker)
+Unknown calldata is intentionally allowed for this hackathon build. The X3 shows the target, ETH value, selector, calldata length, and calldata hash, but it does not decode arbitrary contract behavior. See [Ethereum wallet architecture and security](./docs/ethereum-wallet.md) for the complete flow and limitations.
 
-Some Xteink units purchased from third-party stores (e.g. AliExpress) ship with USB flashing locked from the factory.
-If your device is locked, you will need to use the **Xteink Unlocker** tool available at
-https://crosspointreader.com/#unlock-tool before you can flash CrossPoint.
+## Install from source
 
-**You do not need this tool if you bought your device directly from xteink.com.** Those units are not locked.
+There is no supported binary release yet. Build and flash this fork from source.
 
-**Not sure if your device is locked?** Power it on, connect the USB-C cable, and try flashing via the web flasher first (see
-[Install firmware](#install-firmware) below). If the browser's serial device picker does not show your device, try a different
-USB port or browser before assuming the device is locked. Only reach for the unlocker if the device still doesn't appear.
+### X3 firmware
 
-> ### ⚠️ WARNING: READ THIS BEFORE USING THE UNLOCKER ⚠️
-> 
-> **The only officially supported firmwares in the unlock tool are CrossPoint and CrossInk.**
-> 
-> Flashing any other firmware on a USB-locked device may **permanently brick the device** or leave it **permanently
-> stuck on that firmware with no recovery path**. Once USB flashing is re-locked, your only way back is via OTA, and if
-> the firmware you flashed doesn't support OTA, **there is no way out**.
-
-## Install firmware
-
-### Web installer (recommended)
-
-1. Connect your device to your computer via USB-C and wake/unlock the device
-2. Go to https://crosspointreader.com/#flash-tools, select device (X3 or X4), and choose an official CrossPoint release.
-
-### Web installer (specific version)
-
-1. Connect your device to your computer via USB-C and wake/unlock the device
-2. Download a `firmware.bin` from [Releases](https://github.com/crosspoint-reader/crosspoint-reader/releases), local build, or continuous integration artifact.
-3. Go to https://crosspointreader.com/#flash-tools, select device (X3 or X4), click "Custom .bin" and upload a `firmware.bin`.
-
-### Revert to Official Firmware
-
-To revert to the official firmware, you can also flash the latest official firmware using https://crosspointreader.com/#flash-tools.
-
-### Command line
-
-1. Install [`esptool`](https://github.com/espressif/esptool):
+Prerequisites: a data-capable USB-C cable, Python 3.8+, and [pioarduino](https://github.com/pioarduino/pioarduino) or its VS Code extension.
 
 ```bash
-pip install esptool
+git clone --recursive git@github.com:teddyknox/crosspoint-reader-eth-wallet.git
+cd crosspoint-reader-eth-wallet
+git switch feature/phone-sync-apps
+pio run -e default
+pio run -e default --target upload
 ```
 
-2. Download `firmware.bin` from the [releases page](https://github.com/crosspoint-reader/crosspoint-reader/releases).
-3. Connect your device via USB-C.
-4. Find the device port. On Linux, run `dmesg` after connecting. On macOS:
+If the serial port is not auto-detected, add `--upload-port /dev/cu.usbmodem101` with the actual port for your machine.
+
+Some third-party Xteink units ship with USB flashing locked. Read the upstream [unlock and recovery guidance](https://crosspointreader.com/#unlock-tool) before attempting to flash one of those devices.
+
+### iOS companion
+
+Requirements: macOS, Xcode, an Apple Development team, and a physical iPhone running iOS 17 or later.
 
 ```bash
-log stream --predicate 'subsystem == "com.apple.iokit"' --info
+cd companion-ios
+open X3Companion.xcodeproj
 ```
 
-5. Flash:
+Select your development team and physical iPhone in Xcode, then Run. Allow Bluetooth, Calendar, and Camera access when prompted. The checked-in project already includes the Reown WalletConnect dependencies; `project.yml` is the XcodeGen source if the project needs to be regenerated.
+
+## First setup
+
+1. Open **Apps > Daily Calendar** on the X3.
+2. Open X3 Companion on the iPhone and start calendar sync.
+3. Enter the six-digit passkey shown by the X3 in the iOS Bluetooth prompt.
+4. Open **Apps > Ethereum Wallet** on the X3.
+5. Set and confirm a six-digit wallet PIN. The X3 generates and encrypts a new key.
+6. Leave the wallet open while the companion reads its address.
+7. In the companion, open **Connect a dapp** and scan or paste a WalletConnect pairing URI.
+8. Review every request on the X3 and confirm it with the device button.
+
+The BLE bond and wallet PIN protect different boundaries: bonding restricts which phone can connect, while the PIN encrypts the wallet key and gates signing. Forgetting the paired phone does not delete the wallet. Forgetting the PIN does make the wallet inaccessible; there is currently no recovery or export flow.
+
+## Development and verification
+
+Firmware:
 
 ```bash
-esptool.py --chip esp32c3 --port /dev/ttyACM0 --baud 921600 write_flash 0x10000 /path/to/firmware.bin
-```
-
-Adjust `/dev/ttyACM0` to match your system.
-
-### Manual
-
-See [Development quick start](#development-quick-start) below.
-
----
-
-## Custom SD-card fonts
-
-Convert your own TTF/OTF files into `.cpfont` files that load from the SD card. No firmware reflash is needed.
-
-1. Go to https://crosspointreader.com/fonts and open the "SD-card font builder" form.
-2. Upload up to four styles (regular, bold, italic, bold-italic), set the family name, point sizes, and Unicode range.
-3. Download the generated `.cpfont` files.
-4. Copy them to your SD card under `/fonts/YourFont/` (or `/.fonts/YourFont/` to hide the folder).
-5. Select the font on the device from the font settings.
-
-Conversion runs the firmware repo's `lib/EpdFont/scripts/fontconvert_sdcard.py` script unmodified, so output matches a local host build.
-
----
-
-## Documentation
-
-- [User Guide](./USER_GUIDE.md)
-- [Web server usage](./docs/webserver.md)
-- [Web server endpoints](./docs/webserver-endpoints.md)
-- [Project scope](./SCOPE.md)
-- [Contributing docs](./docs/contributing/README.md)
-- [Touch and UI development](./docs/contributing/touch-and-ui.md) - how to build new screens on the FreeInkUI activity bases (UiListActivity and friends), plus build envs for the non-Xteink touch devices
-
----
-
-## Development quick start
-
-### Prerequisites
-
-- [pioarduino](https://github.com/pioarduino/pioarduino) or VS Code + pioarduino plugin
-- Python 3.8+
-- `clang-format` 21
-- USB-C cable supporting data transfer
-
-### Setup
-
-```bash
-git clone --recursive https://github.com/crosspoint-reader/crosspoint-reader
-cd crosspoint-reader
-
-# if cloned without --recursive:
-git submodule update --init --recursive
-```
-
-### Nix/NixOS
-
-Nix/NixOS users can enter the development shell with either `nix develop` (flakes) or `nix-shell`:
-
-```bash
-nix develop -f nix
-# or
-nix-shell nix
-```
-
-To flash a connected ESP32-C3 device, enable PlatformIO's udev rules in your NixOS configuration:
-
-```nix
-services.udev.packages = with pkgs; [ platformio-core.udev ];
-```
-
-After rebuilding the system configuration, reconnect the device or reload udev rules.
-
-### Build / flash / monitor
-
-```bash
-pio run --target upload
-```
-
-### Contributor pre-PR checks
-
-```bash
-./bin/clang-format-fix
-pio check -e default
+./bin/clang-format-fix -g
+cmake --build build/test
+ctest --test-dir build/test --output-on-failure -j
 pio run -e default
 ```
 
-### Debugging
+iOS:
 
-After flashing the new features, it’s recommended to capture detailed logs from the serial port.
-
-First, make sure all required Python packages are installed:
-
-```python
-python3 -m pip install pyserial colorama matplotlib
+```bash
+xcodebuild test \
+  -project companion-ios/X3Companion.xcodeproj \
+  -scheme X3Companion \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  CODE_SIGNING_ALLOWED=NO
 ```
 
-After that run the script:
+Repository layout:
 
-```sh
-# For Linux
-# This was tested on Debian and should work on most Linux systems.
-python3 scripts/debugging_monitor.py
+- `src/apps/` — Daily Calendar and Ethereum Wallet activities.
+- `src/wallet/` and `lib/EvmWallet/` — encrypted key vault, Ethereum parsing, hashing, and signing.
+- `lib/hal/HalBle*` — bonded BLE services for calendar sync and wallet requests.
+- `lib/PhoneSync/` and `src/phone/` — bounded calendar wire protocol and snapshot persistence.
+- `companion-ios/` — SwiftUI companion, WalletConnect bridge, RPC client, and iOS tests.
+- `test/evm_wallet/` and `test/phone_sync/` — native protocol and cryptographic test coverage.
 
-# For macOS
-python3 scripts/debugging_monitor.py /dev/cu.usbmodem2101
-```
+## Documentation
 
-Minor adjustments may be required for Windows.
+- [Ethereum wallet architecture and security](./docs/ethereum-wallet.md)
+- [iOS companion guide](./companion-ios/README.md)
+- [CrossPoint user guide](./USER_GUIDE.md)
+- [Recovering a bricked Xteink](./docs/fix-bricked-xteink.md)
+- [Firmware development guide](./docs/contributing/README.md)
 
----
+## Upstream and status
 
-## Internals
+This repository is an independent, experimental fork of [crosspoint-reader/crosspoint-reader](https://github.com/crosspoint-reader/crosspoint-reader). It is not an official CrossPoint release and is not affiliated with CrossPoint, Xteink, WalletConnect/Reown, Ledger, Trezor, or any device manufacturer.
 
-CrossPoint Reader is pretty aggressive about caching data down to the SD card to minimise RAM usage. The ESP32-C3 only has ~380KB of usable RAM, so we have to be careful. A lot of the decisions made in the design of the firmware were based on this constraint.
-
-### Data caching
-
-The first time chapters of a book are loaded, they are cached to the SD card. Subsequent loads are served from the
-cache. This cache directory exists at `.crosspoint` on the SD card. The structure is as follows:
-
-```text
-.crosspoint/
-├── epub_<hash>/         # one directory per book, named by content hash
-│   ├── progress.bin     # reading position (chapter, page, etc.)
-│   ├── cover.bmp        # generated cover image
-│   ├── book.bin         # metadata: title, author, spine, TOC
-│   ├── css_rules.cache  # parsed CSS rule cache
-│   ├── img_*            # rendered image cache files
-│   └── sections/        # per-chapter layout cache
-│       ├── 0.bin
-│       ├── 1.bin
-│       └── ...
-├── settings.json        # device settings
-├── state.json           # resume/runtime state
-└── recent.json          # recent books list
-```
-
-Removing `/.crosspoint` clears all cached metadata and forces a full regeneration on next open. Book deletes, overwrites, and moves done through the firmware or web UI clear or re-key matching caches; manual SD-card edits may leave stale cache directories behind.
-
-For more details on the internal file structures, see the [file formats document](./docs/file-formats.md).
-
----
-
-## Contributing
-
-Contributions are welcome. If you're new to the codebase, start with the [contributing docs](./docs/contributing/README.md). For things to work on, check the [ideas discussion board](https://github.com/crosspoint-reader/crosspoint-reader/discussions/categories/ideas) — leave a comment before starting so we don't duplicate effort.
-
-Everyone here is a volunteer, so please be respectful and patient. For governance and community expectations, see [GOVERNANCE.md](./GOVERNANCE.md).
-
----
-
-## Community forks
-
-One of the best things about open source is that anyone can take the code in a different direction. If you need something outside CrossPoint's [scope](./SCOPE.md), check out the community forks:
-
-- [CrossInk](https://github.com/uxjulia/CrossInk) — Typography and reading tracking: Bionic Reading (bolds word stems to create fixation points), guide dots between words, improved paragraph indents, and replaces the default fonts with ChareInk/Lexend/Bitter.
-
-- [papyrix-reader](https://github.com/bigbag/papyrix-reader) — Adds FB2 and MD format support. Actively maintained with Arabic script support. Custom themes via SD card.
-
-- ~~[crosspet](https://github.com/trilwu/crosspet) — A Vietnamese fork that adds a Tamagotchi-style virtual chicken that grows based on your reading milestones (pages read, streaks, care). Also: Flashcards, Weather, Pomodoro timer, and mini-games.~~ (Unmaintained)
-
-- [crosspoint-reader-cjk](https://github.com/aBER0724/crosspoint-reader-cjk) — Purpose-built for Chinese, Japanese, and Korean reading.
-
-- [inx](https://github.com/obijuankenobiii/inx) — Completely reimagines the user interface with tabbed navigation.
-
-- ~~[PlusPoint](https://github.com/ngxson/pluspoint-reader) — custom JS apps support.~~ (Unmaintained)
-
-- [crosspoint-reader-papers3](https://github.com/juicecultus/crosspoint-reader-papers3) — Crosspoint port for M5Stack Paper S3. 
-
-- [t5s3-reader](https://github.com/ShallowGreen123/t5s3-reader) — Crosspoint port for LilyGo T5 ePaper S3 / T5S3 4.7-inch e-paper device.
-
-**Note:** Many of these features will make their way into CrossPoint over time. We maintain a slower pace to ensure rock-solid stability and squash bugs before they reach your device.
-
-Want to build your own device? Be sure to check out the [de-link](https://github.com/iandchasse/de-link) project.
-
----
-
-CrossPoint Reader is **not affiliated with Xteink or any device manufacturer**.
-
-Huge shoutout to [diy-esp32-epub-reader](https://github.com/atomic14/diy-esp32-epub-reader), which inspired this project.
+The inherited firmware is licensed under the repository's existing [LICENSE](./LICENSE). Upstream reader issues should be reproduced against upstream CrossPoint before being reported there; fork-specific wallet, BLE, calendar, and companion issues belong in this repository.
