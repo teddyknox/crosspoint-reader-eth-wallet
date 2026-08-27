@@ -1,0 +1,515 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1E3364E52D5C7AEFA768C350 /* EvmTransactionEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C853BE07EEA026CF570BE36 /* EvmTransactionEncoderTests.swift */; };
+		28F36E67C9E96C26D2911F4A /* ReownSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBECC6C1F64C069A8DE113A4 /* ReownSupport.swift */; };
+		300C2C5B557915DC7BDEC15F /* RPCSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DF9388B52F1B795C8AAC934 /* RPCSettingsView.swift */; };
+		325FFE08AEDFCFBC22AAA7E5 /* WalletConnect in Frameworks */ = {isa = PBXBuildFile; productRef = 7C60D326F635FD82D2E643AE /* WalletConnect */; };
+		35AD65B8668C57263124295D /* ReownRPCClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F7D995086C879395F05CC4 /* ReownRPCClient.swift */; };
+		3C442E01F02777070D6F5DA0 /* BLESyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E987305D9689D21D21435450 /* BLESyncManager.swift */; };
+		4E444D54821FAB9CFCEF2B97 /* EvmTransactionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE16151B7BCD06CAD03CCCB5 /* EvmTransactionService.swift */; };
+		529EE93665D9BAADC0DC1C4E /* CompanionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 379B834797832A4DD36757A9 /* CompanionModel.swift */; };
+		54B417CF017503F477B89950 /* ReownWalletKit in Frameworks */ = {isa = PBXBuildFile; productRef = E739F8B552F2684D93AB517F /* ReownWalletKit */; };
+		5D7AD5A890F1FD2631B8AF8A /* CalendarSnapshotEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53E1D11DDBF0EC85A0D91701 /* CalendarSnapshotEncoderTests.swift */; };
+		63D8113412A3C692B51B03C9 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F896B821AC21271C252E1894 /* ContentView.swift */; };
+		6D7AC09BC1E69CA6BFC2D6C3 /* EvmTransactionEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2389F60C577214AD53E570D6 /* EvmTransactionEncoder.swift */; };
+		6D8E279AB23FDBAE0159733A /* CalendarSnapshotProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F65E40016FB8F2DC96F11413 /* CalendarSnapshotProvider.swift */; };
+		71079A11A211596F74208A0C /* RPCSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E4DF6C62C4AD7146988D7CE /* RPCSettings.swift */; };
+		7B45D35811EDC212FB459865 /* WalletConnectQRScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D6EEDD12C56B24163BAB00F /* WalletConnectQRScanner.swift */; };
+		8DA3CE93F91F8D286CF89150 /* X3CompanionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C625A63C6F3C791A9AF4FBA1 /* X3CompanionApp.swift */; };
+		9C46ACADDBB7E791FDB6CC94 /* WalletConnectNetworking in Frameworks */ = {isa = PBXBuildFile; productRef = EADC993F04BA9988E82FEEBD /* WalletConnectNetworking */; };
+		A190319E3CCD68AC6D21D0AC /* ReceiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43FAC104411E1EF65555CD33 /* ReceiveView.swift */; };
+		B151B0F59A280E1F36B1541A /* EvmWalletView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7248246FE5F8C871653A286 /* EvmWalletView.swift */; };
+		B24C2703E3784335B5E42011 /* WalletConnectManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0D6D9B8E36E98CC5B16A55 /* WalletConnectManager.swift */; };
+		B56591DCED2CC29DD167DE5D /* CalendarSnapshotEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BE887DFA86ECF334317874E /* CalendarSnapshotEncoder.swift */; };
+		B6D8F7EB7D7A25856BB27346 /* WalletConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A41C7BB6CAC5ECA0941FAFE /* WalletConnectView.swift */; };
+		C18D95BAA5F0F81F8B79103D /* WalletHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D3E0842B43E24E1D4D0AB45 /* WalletHomeView.swift */; };
+		C1B433C0ADEC3B544FFF13F9 /* EvmSignRequestEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5F1711A03E90D5394EF69DC /* EvmSignRequestEncoder.swift */; };
+		CE40AE5C5B2D314AD93025B0 /* WalletComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE1D47DF13BF2736AA478F85 /* WalletComponents.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		632D721ABA64D02BDF18A90F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C36B47A2871720252BFC49CC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 913AD447323352B0543FA606;
+			remoteInfo = X3Companion;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		06A968DE1CB81451B169408A /* X3Companion.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = X3Companion.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1D6EEDD12C56B24163BAB00F /* WalletConnectQRScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletConnectQRScanner.swift; sourceTree = "<group>"; };
+		1E4DF6C62C4AD7146988D7CE /* RPCSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RPCSettings.swift; sourceTree = "<group>"; };
+		2389F60C577214AD53E570D6 /* EvmTransactionEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmTransactionEncoder.swift; sourceTree = "<group>"; };
+		27A9EB036D69FEFB350685BE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2B0D6D9B8E36E98CC5B16A55 /* WalletConnectManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletConnectManager.swift; sourceTree = "<group>"; };
+		379B834797832A4DD36757A9 /* CompanionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionModel.swift; sourceTree = "<group>"; };
+		43FAC104411E1EF65555CD33 /* ReceiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiveView.swift; sourceTree = "<group>"; };
+		4E53F472D58221F19EFB87C0 /* X3CompanionTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = X3CompanionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		53E1D11DDBF0EC85A0D91701 /* CalendarSnapshotEncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarSnapshotEncoderTests.swift; sourceTree = "<group>"; };
+		5A41C7BB6CAC5ECA0941FAFE /* WalletConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletConnectView.swift; sourceTree = "<group>"; };
+		6BE887DFA86ECF334317874E /* CalendarSnapshotEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarSnapshotEncoder.swift; sourceTree = "<group>"; };
+		6C853BE07EEA026CF570BE36 /* EvmTransactionEncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmTransactionEncoderTests.swift; sourceTree = "<group>"; };
+		6D3E0842B43E24E1D4D0AB45 /* WalletHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHomeView.swift; sourceTree = "<group>"; };
+		6DF9388B52F1B795C8AAC934 /* RPCSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RPCSettingsView.swift; sourceTree = "<group>"; };
+		A1F7D995086C879395F05CC4 /* ReownRPCClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReownRPCClient.swift; sourceTree = "<group>"; };
+		A7248246FE5F8C871653A286 /* EvmWalletView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmWalletView.swift; sourceTree = "<group>"; };
+		C5F1711A03E90D5394EF69DC /* EvmSignRequestEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmSignRequestEncoder.swift; sourceTree = "<group>"; };
+		C625A63C6F3C791A9AF4FBA1 /* X3CompanionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = X3CompanionApp.swift; sourceTree = "<group>"; };
+		DE1D47DF13BF2736AA478F85 /* WalletComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletComponents.swift; sourceTree = "<group>"; };
+		E987305D9689D21D21435450 /* BLESyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLESyncManager.swift; sourceTree = "<group>"; };
+		EBECC6C1F64C069A8DE113A4 /* ReownSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReownSupport.swift; sourceTree = "<group>"; };
+		F65E40016FB8F2DC96F11413 /* CalendarSnapshotProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarSnapshotProvider.swift; sourceTree = "<group>"; };
+		F896B821AC21271C252E1894 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		FE16151B7BCD06CAD03CCCB5 /* EvmTransactionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EvmTransactionService.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D9EF593C1DB07F737C45DAB2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				54B417CF017503F477B89950 /* ReownWalletKit in Frameworks */,
+				325FFE08AEDFCFBC22AAA7E5 /* WalletConnect in Frameworks */,
+				9C46ACADDBB7E791FDB6CC94 /* WalletConnectNetworking in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		4ED70674C1B9B582B28A731B /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				53E1D11DDBF0EC85A0D91701 /* CalendarSnapshotEncoderTests.swift */,
+				6C853BE07EEA026CF570BE36 /* EvmTransactionEncoderTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		7B00DED82F547E77BE8C49C9 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				E987305D9689D21D21435450 /* BLESyncManager.swift */,
+				6BE887DFA86ECF334317874E /* CalendarSnapshotEncoder.swift */,
+				F65E40016FB8F2DC96F11413 /* CalendarSnapshotProvider.swift */,
+				379B834797832A4DD36757A9 /* CompanionModel.swift */,
+				F896B821AC21271C252E1894 /* ContentView.swift */,
+				C5F1711A03E90D5394EF69DC /* EvmSignRequestEncoder.swift */,
+				2389F60C577214AD53E570D6 /* EvmTransactionEncoder.swift */,
+				FE16151B7BCD06CAD03CCCB5 /* EvmTransactionService.swift */,
+				A7248246FE5F8C871653A286 /* EvmWalletView.swift */,
+				27A9EB036D69FEFB350685BE /* Info.plist */,
+				43FAC104411E1EF65555CD33 /* ReceiveView.swift */,
+				A1F7D995086C879395F05CC4 /* ReownRPCClient.swift */,
+				EBECC6C1F64C069A8DE113A4 /* ReownSupport.swift */,
+				1E4DF6C62C4AD7146988D7CE /* RPCSettings.swift */,
+				6DF9388B52F1B795C8AAC934 /* RPCSettingsView.swift */,
+				DE1D47DF13BF2736AA478F85 /* WalletComponents.swift */,
+				2B0D6D9B8E36E98CC5B16A55 /* WalletConnectManager.swift */,
+				1D6EEDD12C56B24163BAB00F /* WalletConnectQRScanner.swift */,
+				5A41C7BB6CAC5ECA0941FAFE /* WalletConnectView.swift */,
+				6D3E0842B43E24E1D4D0AB45 /* WalletHomeView.swift */,
+				C625A63C6F3C791A9AF4FBA1 /* X3CompanionApp.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		91A0CD6E06C8D824B33DDEEC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				06A968DE1CB81451B169408A /* X3Companion.app */,
+				4E53F472D58221F19EFB87C0 /* X3CompanionTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BC7414599BA8B4578A882F40 = {
+			isa = PBXGroup;
+			children = (
+				7B00DED82F547E77BE8C49C9 /* Sources */,
+				4ED70674C1B9B582B28A731B /* Tests */,
+				91A0CD6E06C8D824B33DDEEC /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		54ADD7075933F14738FEB7F4 /* X3CompanionTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6E0E6AA50977F79E499A04F0 /* Build configuration list for PBXNativeTarget "X3CompanionTests" */;
+			buildPhases = (
+				6C079C83D0CF5E352FD64596 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A98DBB613233375955419E4E /* PBXTargetDependency */,
+			);
+			name = X3CompanionTests;
+			packageProductDependencies = (
+			);
+			productName = X3CompanionTests;
+			productReference = 4E53F472D58221F19EFB87C0 /* X3CompanionTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		913AD447323352B0543FA606 /* X3Companion */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0103EEAD42A347FCEC56597D /* Build configuration list for PBXNativeTarget "X3Companion" */;
+			buildPhases = (
+				97E0A2DC5635E21964818F00 /* Sources */,
+				D9EF593C1DB07F737C45DAB2 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = X3Companion;
+			packageProductDependencies = (
+				E739F8B552F2684D93AB517F /* ReownWalletKit */,
+				7C60D326F635FD82D2E643AE /* WalletConnect */,
+				EADC993F04BA9988E82FEEBD /* WalletConnectNetworking */,
+			);
+			productName = X3Companion;
+			productReference = 06A968DE1CB81451B169408A /* X3Companion.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C36B47A2871720252BFC49CC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+			};
+			buildConfigurationList = E1141F1004781BB94A1C48BC /* Build configuration list for PBXProject "X3Companion" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = BC7414599BA8B4578A882F40;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				726688F9F29BE289C6A7FF2F /* XCRemoteSwiftPackageReference "reown-swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				913AD447323352B0543FA606 /* X3Companion */,
+				54ADD7075933F14738FEB7F4 /* X3CompanionTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		6C079C83D0CF5E352FD64596 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5D7AD5A890F1FD2631B8AF8A /* CalendarSnapshotEncoderTests.swift in Sources */,
+				1E3364E52D5C7AEFA768C350 /* EvmTransactionEncoderTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		97E0A2DC5635E21964818F00 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3C442E01F02777070D6F5DA0 /* BLESyncManager.swift in Sources */,
+				B56591DCED2CC29DD167DE5D /* CalendarSnapshotEncoder.swift in Sources */,
+				6D8E279AB23FDBAE0159733A /* CalendarSnapshotProvider.swift in Sources */,
+				529EE93665D9BAADC0DC1C4E /* CompanionModel.swift in Sources */,
+				63D8113412A3C692B51B03C9 /* ContentView.swift in Sources */,
+				C1B433C0ADEC3B544FFF13F9 /* EvmSignRequestEncoder.swift in Sources */,
+				6D7AC09BC1E69CA6BFC2D6C3 /* EvmTransactionEncoder.swift in Sources */,
+				4E444D54821FAB9CFCEF2B97 /* EvmTransactionService.swift in Sources */,
+				B151B0F59A280E1F36B1541A /* EvmWalletView.swift in Sources */,
+				71079A11A211596F74208A0C /* RPCSettings.swift in Sources */,
+				300C2C5B557915DC7BDEC15F /* RPCSettingsView.swift in Sources */,
+				A190319E3CCD68AC6D21D0AC /* ReceiveView.swift in Sources */,
+				35AD65B8668C57263124295D /* ReownRPCClient.swift in Sources */,
+				28F36E67C9E96C26D2911F4A /* ReownSupport.swift in Sources */,
+				CE40AE5C5B2D314AD93025B0 /* WalletComponents.swift in Sources */,
+				B24C2703E3784335B5E42011 /* WalletConnectManager.swift in Sources */,
+				7B45D35811EDC212FB459865 /* WalletConnectQRScanner.swift in Sources */,
+				B6D8F7EB7D7A25856BB27346 /* WalletConnectView.swift in Sources */,
+				C18D95BAA5F0F81F8B79103D /* WalletHomeView.swift in Sources */,
+				8DA3CE93F91F8D286CF89150 /* X3CompanionApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A98DBB613233375955419E4E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 913AD447323352B0543FA606 /* X3Companion */;
+			targetProxy = 632D721ABA64D02BDF18A90F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		129A6E2E795A0FAF05130CCE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.teddyknox.X3Companion;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		1E3BD3C34279332820C19753 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.teddyknox.X3CompanionTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/X3Companion.app/X3Companion";
+			};
+			name = Release;
+		};
+		3B3D70ADBC2EA9FA20FB5906 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		832ACEAC29739602FA21F534 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		98F38969E168FFD430C59EF0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.teddyknox.X3Companion;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		B168A8CA5B31D7C862E0F76F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.teddyknox.X3CompanionTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/X3Companion.app/X3Companion";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0103EEAD42A347FCEC56597D /* Build configuration list for PBXNativeTarget "X3Companion" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				129A6E2E795A0FAF05130CCE /* Debug */,
+				98F38969E168FFD430C59EF0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6E0E6AA50977F79E499A04F0 /* Build configuration list for PBXNativeTarget "X3CompanionTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B168A8CA5B31D7C862E0F76F /* Debug */,
+				1E3BD3C34279332820C19753 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E1141F1004781BB94A1C48BC /* Build configuration list for PBXProject "X3Companion" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3B3D70ADBC2EA9FA20FB5906 /* Debug */,
+				832ACEAC29739602FA21F534 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		726688F9F29BE289C6A7FF2F /* XCRemoteSwiftPackageReference "reown-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/reown-com/reown-swift.git";
+			requirement = {
+				kind = exactVersion;
+				version = 2.3.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7C60D326F635FD82D2E643AE /* WalletConnect */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 726688F9F29BE289C6A7FF2F /* XCRemoteSwiftPackageReference "reown-swift" */;
+			productName = WalletConnect;
+		};
+		E739F8B552F2684D93AB517F /* ReownWalletKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 726688F9F29BE289C6A7FF2F /* XCRemoteSwiftPackageReference "reown-swift" */;
+			productName = ReownWalletKit;
+		};
+		EADC993F04BA9988E82FEEBD /* WalletConnectNetworking */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 726688F9F29BE289C6A7FF2F /* XCRemoteSwiftPackageReference "reown-swift" */;
+			productName = WalletConnectNetworking;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = C36B47A2871720252BFC49CC /* Project object */;
+}

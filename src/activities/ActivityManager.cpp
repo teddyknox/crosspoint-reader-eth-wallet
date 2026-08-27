@@ -10,6 +10,8 @@
 
 #include "CrossPointSettings.h"
 #include "OpdsServerStore.h"
+#include "apps/CustomAppsActivity.h"
+#include "apps/PhoneDashboardActivity.h"
 #include "boot_sleep/BootActivity.h"
 #include "boot_sleep/SleepActivity.h"
 #include "browser/OpdsBookBrowserActivity.h"
@@ -236,6 +238,16 @@ void ActivityManager::goToBrowser() {
   }
 }
 
+void ActivityManager::goToApps() {
+  auto activity = makeUniqueNoThrow<CustomAppsActivity>(renderer, mappedInput);
+  if (activity) replaceActivity(std::move(activity));
+}
+
+void ActivityManager::goToPhoneDashboard(const bool automaticWake, const bool displayOnly) {
+  auto activity = makeUniqueNoThrow<PhoneDashboardActivity>(renderer, mappedInput, automaticWake, displayOnly);
+  if (activity) replaceActivity(std::move(activity));
+}
+
 void ActivityManager::goToReader(std::string path, const bool allowFastInitialRefresh) {
   if (path.empty()) {
     goToFileBrowser("/");
@@ -278,6 +290,8 @@ void ActivityManager::goHome(HomeMenuItem initialMenuItem, bool cleanInitialRefr
       initialMenuItem = HomeMenuItem::RECENTS;
     } else if (activityName == "OpdsBookBrowser") {
       initialMenuItem = HomeMenuItem::OPDS_BROWSER;
+    } else if (activityName == "CustomApps" || activityName == "PhoneDashboard") {
+      initialMenuItem = HomeMenuItem::APPS;
     } else if (activityName == "CrossPointWebServer") {
       initialMenuItem = HomeMenuItem::FILE_TRANSFER;
     } else if (activityName == "Settings") {

@@ -66,7 +66,7 @@ void HalPowerManager::setPowerSaving(bool enabled) {
   // Otherwise, no change needed
 }
 
-void HalPowerManager::startDeepSleep(HalGPIO& gpio) const {
+[[noreturn]] void HalPowerManager::startDeepSleep(HalGPIO& gpio, const uint32_t timerWakeSeconds) const {
 #ifdef ENABLE_SERIAL_LOG
   // Tear down HWCDC so the host sees a clean disconnect and the peripheral
   // doesn't hold power domains that interfere with USB-powered GPIO wake.
@@ -77,8 +77,9 @@ void HalPowerManager::startDeepSleep(HalGPIO& gpio) const {
 
 #if !SOC_PM_SUPPORT_EXT1_WAKEUP
   if (gpio.isXteinkDevice()) {
-    // GPIO13 gates the battery MOSFET on both Xteink C3 boards; driving it low
-    // is the battery power-off (the SDK wake source still handles USB power).
+    // The shared pin is board-dependent: on X4 it is the battery latch; on X3
+    // it is only the SD power rail. Driving it low powers X4 off and lets X3
+    // remain in true deep sleep with its SD card off.
     // Release any surviving pad hold first: hold_en survives deep sleep via
     // the SDK's deepSleep() (esp_sleep_config_gpio_isolate +
     // gpio_deep_sleep_hold_en), and a held pad silently ignores the drive.
@@ -89,6 +90,14 @@ void HalPowerManager::startDeepSleep(HalGPIO& gpio) const {
   }
 #endif
 
+  if (timerWakeSeconds > 0) {
+    const uint64_t wakeAfterUs = static_cast<uint64_t>(timerWakeSeconds) * 1000000ULL;
+    const esp_err_t timerResult = esp_sleep_enable_timer_wakeup(wakeAfterUs);
+    if (timerResult != ESP_OK) {
+      LOG_ERR("PWR", "Failed to arm timer wake: %d", static_cast<int>(timerResult));
+    }
+  }
+
   // Hold every configured power-latch pin HIGH through deep sleep. These are
   // keep-alive enables (the X4 Pro's master peripheral rail on GPIO1, the
   // Sticky's PWR_HOLD/PWR_LOCK): deepSleep() isolates all pads
@@ -97,8 +106,8 @@ void HalPowerManager::startDeepSleep(HalGPIO& gpio) const {
   // external power leaves (serial/pogo adapter unplugged), and the next power-
   // button press cold-boots instead of fast-waking. holdPowerRails() asserted
   // the latches at boot but arms no sleep hold; arm it here instead. Skips
-  // XTEINK_C3_GPIO13: it IS power.latch0 on the C3 Xteink boards, where the
-  // block above drives it LOW on purpose (battery power-off).
+  // XTEINK_C3_GPIO13 is X4's power.latch0; on X3 the same pin is represented
+  // by sd.powerEnable instead. Either way the block above already held it LOW.
   for (const int8_t pin : {BoardConfig::ACTIVE.power.latch0, BoardConfig::ACTIVE.power.latch1}) {
     if (pin < 0 || static_cast<gpio_num_t>(pin) == XTEINK_C3_GPIO13) continue;
     const auto g = static_cast<gpio_num_t>(pin);

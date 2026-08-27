@@ -31,12 +31,15 @@
 #include "OpdsServerStore.h"
 #include "RecentBooksStore.h"
 #include "SdCardFontSystem.h"
+#include "SystemSleep.h"
 #include "activities/Activity.h"
 #include "activities/ActivityManager.h"
 #include "activities/settings/SdFirmwareUpdateActivity.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "images/LoadingIcon.h"
+#include "phone/PhoneSnapshotStore.h"
+#include "phone/PhoneSyncConfig.h"
 #include "util/ButtonNavigator.h"
 #include "util/ScreenshotUtil.h"
 
@@ -242,7 +245,7 @@ static bool loadSleepFrameBuffer() {
 }
 
 // Enter deep sleep mode
-void enterDeepSleep(bool fromTimeout = false) {
+[[noreturn]] void enterDeepSleep(const bool fromTimeout, const bool preserveCurrentDisplay) {
   HalPowerManager::Lock powerLock;  // Ensure we are at normal CPU frequency for sleep preparation
   APP_STATE.lastSleepFromReader = activityManager.isReaderActivity();
 
@@ -259,9 +262,21 @@ void enterDeepSleep(bool fromTimeout = false) {
   // Commit to sleeping before goToSleep() runs the outgoing activity's onExit():
   // a WiFi activity would otherwise silentRestart() here and reboot instead.
   deepSleepInProgress = true;
-  activityManager.goToSleep(fromTimeout);
 
-  if (isQuickResumeSleep) {
+  phone_sync::CalendarSnapshot phoneSnapshot{};
+  const bool showPhoneCalendar =
+      gpio.deviceIsX3() && !preserveCurrentDisplay && PHONE_SNAPSHOT_STORE.copySnapshot(phoneSnapshot);
+  if (showPhoneCalendar) {
+    // E-ink retains this frame with zero power. Make the cached dashboard the
+    // X3's sleep screen regardless of which compiled-in app was active.
+    activityManager.goToPhoneDashboard(false, true);
+    activityManager.loop();
+    activityManager.requestUpdateAndWait();
+  } else if (!preserveCurrentDisplay) {
+    activityManager.goToSleep(fromTimeout);
+  }
+
+  if (isQuickResumeSleep && !showPhoneCalendar && !preserveCurrentDisplay) {
     saveSleepFrameBuffer();
   } else if (Storage.exists(SLEEP_FRAME_FILE)) {
     // A stale Quick Resume frame must not replace the selected sleep screen during wake.
@@ -279,7 +294,7 @@ void enterDeepSleep(bool fromTimeout = false) {
   display.deepSleep();
   LOG_DBG("MAIN", "Entering deep sleep");
 
-  powerManager.startDeepSleep(gpio);
+  powerManager.startDeepSleep(gpio, gpio.deviceIsX3() ? phone_sync::WAKE_INTERVAL_SECONDS : 0);
 }
 
 void setupDisplayAndFonts(bool seamless = false) {
@@ -361,7 +376,7 @@ void setup() {
 
   const auto wakeupReason = gpio.getWakeupReason();
   if (wakeupReason == HalGPIO::WakeupReason::PowerButton && !gpio.verifyPowerButtonWakeup()) {
-    powerManager.startDeepSleep(gpio);
+    powerManager.startDeepSleep(gpio, gpio.deviceIsX3() ? phone_sync::WAKE_INTERVAL_SECONDS : 0);
   }
 
   const auto recoveryButton =
@@ -390,7 +405,8 @@ void setup() {
   HalSystem::checkPanic();
 
   APP_STATE.loadFromFile();
-  const bool isSleepWake = wakeupReason == HalGPIO::WakeupReason::PowerButton;
+  const bool isSleepWake =
+      wakeupReason == HalGPIO::WakeupReason::PowerButton || wakeupReason == HalGPIO::WakeupReason::Timer;
   const bool isPersistedSleepWake = isSleepWake && !APP_STATE.showBootScreen;
 
   if (recoveryFirmwareMode) {
@@ -402,6 +418,7 @@ void setup() {
   I18N.setLanguage(static_cast<Language>(SETTINGS.language));
   KOREADER_STORE.loadFromFile();
   OPDS_STORE.loadFromFile();
+  PHONE_SNAPSHOT_STORE.load();
   UITheme::getInstance().reload();
   ButtonNavigator::setMappedInputManager(mappedInputManager);
 
@@ -415,6 +432,9 @@ void setup() {
     case HalGPIO::WakeupReason::PowerButton:
       wakePowerReleasePending = true;
       break;
+    case HalGPIO::WakeupReason::Timer:
+      LOG_DBG("MAIN", "Wakeup reason: Timer");
+      break;
     case HalGPIO::WakeupReason::AfterUSBPower:
       // If USB power caused a cold boot, go back to sleep
       LOG_DBG("MAIN", "Wakeup reason: After USB Power");
@@ -423,7 +443,7 @@ void setup() {
       // Sleeping here would strand the device in a USB-replug boot loop.
       break;
 #else
-      powerManager.startDeepSleep(gpio);
+      powerManager.startDeepSleep(gpio, gpio.deviceIsX3() ? phone_sync::WAKE_INTERVAL_SECONDS : 0);
       break;
 #endif
     case HalGPIO::WakeupReason::AfterFlash:
@@ -497,6 +517,8 @@ void setup() {
   } else if (rebootedFromPanic) {
     // If we rebooted from a panic, go to crash report screen to show the panic info
     activityManager.goToCrashReport();
+  } else if (wakeupReason == HalGPIO::WakeupReason::Timer) {
+    activityManager.goToPhoneDashboard(true);
   } else if (resume == BootResume::Silent && snapshotTarget == SILENT_REBOOT_TARGET_READER &&
              !APP_STATE.openEpubPath.empty()) {
     activityManager.goToReader(APP_STATE.openEpubPath);

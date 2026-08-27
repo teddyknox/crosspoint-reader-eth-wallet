@@ -1,0 +1,57 @@
+name: X3Companion
+options:
+  bundleIdPrefix: com.teddyknox
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+packages:
+  Reown:
+    url: https://github.com/reown-com/reown-swift.git
+    exactVersion: 2.3.1
+targets:
+  X3Companion:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    dependencies:
+      - package: Reown
+        product: ReownWalletKit
+      - package: Reown
+        product: WalletConnect
+      - package: Reown
+        product: WalletConnectNetworking
+    info:
+      path: Sources/Info.plist
+      properties:
+        CFBundleDisplayName: X3 Companion
+        CFBundleURLTypes:
+          - CFBundleURLName: com.teddyknox.X3Companion.walletconnect
+            CFBundleURLSchemes:
+              - x3companion
+        X3WalletConnectAccessGroup: $(DEVELOPMENT_TEAM).$(PRODUCT_BUNDLE_IDENTIFIER)
+        X3ReownProjectID: b0946cf7dcf5c972746c641a2817e7db
+        NSBluetoothAlwaysUsageDescription: X3 Companion uses Bluetooth to sync your calendar and send transactions to your Xteink X3 for review and signing.
+        NSCameraUsageDescription: X3 Companion uses the camera to scan WalletConnect pairing QR codes.
+        NSCalendarsFullAccessUsageDescription: X3 Companion reads today's events so it can send a display-only snapshot to your Xteink X3.
+        UIBackgroundModes:
+          - bluetooth-central
+        UILaunchScreen: {}
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.teddyknox.X3Companion
+        TARGETED_DEVICE_FAMILY: "1"
+  X3CompanionTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests
+    dependencies:
+      - target: X3Companion
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.teddyknox.X3CompanionTests

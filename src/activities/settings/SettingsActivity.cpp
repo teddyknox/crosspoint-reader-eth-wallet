@@ -1,5 +1,6 @@
 #include "SettingsActivity.h"
 
+#include <Arduino.h>
 #include <BoardConfig.h>
 #include <GfxRenderer.h>
 #include <HalDisplay.h>
@@ -13,6 +14,7 @@
 #include "ClearCacheActivity.h"
 #include "CrossPointSettings.h"
 #include "FontDownloadActivity.h"
+#include "HalBleBondSecurity.h"
 #include "KOReaderSettingsActivity.h"
 #include "LanguageSelectActivity.h"
 #include "MappedInputManager.h"
@@ -24,6 +26,7 @@
 #include "StatusBarSettingsActivity.h"
 #include "TextSettingsActivity.h"
 #include "activities/network/WifiSelectionActivity.h"
+#include "activities/util/ConfirmationActivity.h"
 #include "activities/util/IntervalSelectionActivity.h"
 #include "components/UITheme.h"
 #include "components/UIThemeTokens.h"
@@ -84,6 +87,7 @@ void SettingsActivity::rebuildSettingsLists() {
                             SettingInfo::Action(StrId::STR_REMAP_FRONT_BUTTONS, SettingAction::RemapFrontButtons));
   }
   systemSettings.push_back(SettingInfo::Action(StrId::STR_WIFI_NETWORKS, SettingAction::Network));
+  systemSettings.push_back(SettingInfo::Action(StrId::STR_BLUETOOTH_FORGET_PHONE, SettingAction::ForgetBluetoothPhone));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_KOREADER_SYNC, SettingAction::KOReaderSync));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_OPDS_SERVERS, SettingAction::OPDSBrowser));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_CLEAR_READING_CACHE, SettingAction::ClearCache));
@@ -335,6 +339,20 @@ void SettingsActivity::toggleCurrentSetting() {
         break;
       case SettingAction::Network:
         startActivityForResult(std::make_unique<WifiSelectionActivity>(renderer, mappedInput, false), resultHandler);
+        break;
+      case SettingAction::ForgetBluetoothPhone:
+        startActivityForResult(
+            std::make_unique<ConfirmationActivity>(renderer, mappedInput, tr(STR_BLUETOOTH_FORGET_PHONE),
+                                                   tr(STR_BLUETOOTH_FORGET_PHONE_WARNING)),
+            [this](const ActivityResult& result) {
+              if (result.isCancelled) return;
+              if (hal_ble_bond::forgetTrustedPhone()) {
+                ESP.restart();
+              }
+              LOG_ERR("BLE", "Could not forget trusted phone from Settings");
+              rebuildSettingsLists();
+              requestUpdate();
+            });
         break;
       case SettingAction::ClearCache:
         startActivityForResult(std::make_unique<ClearCacheActivity>(renderer, mappedInput), resultHandler);
